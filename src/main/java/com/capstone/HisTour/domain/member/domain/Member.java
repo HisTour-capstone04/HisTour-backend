@@ -2,15 +2,14 @@ package com.capstone.HisTour.domain.member.domain;
 
 import com.capstone.HisTour.global.BaseTimeEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "member")
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter
 public class Member extends BaseTimeEntity {
 
     @Id
@@ -32,6 +31,15 @@ public class Member extends BaseTimeEntity {
     @Enumerated(EnumType.STRING) // Enum을 문자열로 저장
     @Column(nullable = false)
     private MemberStatus status = MemberStatus.ACTIVE;
+
+    @Builder
+    public Member(String email, String password, String username, LoginType loginType, MemberStatus status) {
+        this.email = email;
+        this.password = password;
+        this.username = username;
+        this.loginType = loginType;
+        this.status = status;
+    }
 
     public void deactivateUser() {
         this.status = MemberStatus.INACTIVE;
