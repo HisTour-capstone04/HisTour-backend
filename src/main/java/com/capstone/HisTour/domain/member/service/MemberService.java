@@ -46,13 +46,18 @@ public class MemberService {
         String accessToken = jwtTokenProvider.createAccessToken(member);
 
         // refresh token 생성
-        String refreshToken = jwtTokenProvider.createRefreshToken(member);
+        RefreshToken refreshTokenEntity = refreshTokenRepository.findByMemberId(member.getId())
+                .orElse(null);
 
-        // refresh token DB에 저장
-        refreshTokenRepository.save(RefreshToken.builder()
-                .member(member)
-                .token(refreshToken)
-                .build());
+        String refreshToken;
+        if (refreshTokenEntity == null || !jwtTokenProvider.validateToken(refreshTokenEntity.getToken())) {
+            refreshToken = jwtTokenProvider.createRefreshToken(member);
+            refreshTokenEntity = RefreshToken.builder()
+                    .member(member)
+                    .token(refreshToken)
+                    .build();
+            refreshTokenRepository.save(refreshTokenEntity);
+        }
 
         // LoginResponse dto 생성
         return LoginResponse.builder()
