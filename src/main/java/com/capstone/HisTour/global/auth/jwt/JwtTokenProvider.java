@@ -1,6 +1,7 @@
 package com.capstone.HisTour.global.auth.jwt;
 
 import com.capstone.HisTour.domain.member.domain.Member;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,23 +28,29 @@ public class JwtTokenProvider {
                 Jwts.SIG.HS256.key().build().getAlgorithm());
     }
 
-    public String createAccessToken(Member member) {
+    // access token 생성
+    public String createAccessToken(Member member, Long refreshTokenId) {
         return Jwts.builder()
                 .claim("memberId", member.getId())
+                .claim("username", member.getUsername())
+                .claim("refreshTokenId", refreshTokenId)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + accessExpiration))
                 .signWith(secretKey)
                 .compact();
     }
 
+    // refresh token 생성
     public String createRefreshToken(Member member) {
         return Jwts.builder()
                 .claim("memberId", member.getId())
+                .claim("username", member.getUsername())
                 .expiration(new Date(System.currentTimeMillis() + refreshExpiration))
                 .signWith(secretKey)
                 .compact();
     }
 
+    // 토큰 유효성 검사
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
@@ -55,5 +62,16 @@ public class JwtTokenProvider {
         } catch (NullPointerException | JwtException e) {
             return false;
         }
+    }
+
+    // 토큰 정보 파싱
+    public Claims parseJwtToken(String token) {
+        validateToken(token);
+
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }

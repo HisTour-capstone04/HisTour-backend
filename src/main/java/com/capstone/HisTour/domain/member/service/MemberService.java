@@ -5,11 +5,13 @@ import com.capstone.HisTour.domain.member.domain.Member;
 import com.capstone.HisTour.domain.member.domain.MemberStatus;
 import com.capstone.HisTour.domain.member.dto.LoginRequest;
 import com.capstone.HisTour.domain.member.dto.LoginResponse;
+import com.capstone.HisTour.domain.member.dto.MemberResponse;
 import com.capstone.HisTour.domain.member.dto.SignupRequest;
 import com.capstone.HisTour.domain.member.repository.MemberRepository;
 import com.capstone.HisTour.domain.refresh_token.domain.RefreshToken;
 import com.capstone.HisTour.domain.refresh_token.repository.RefreshTokenRepository;
 import com.capstone.HisTour.global.auth.jwt.JwtTokenProvider;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -42,22 +44,18 @@ public class MemberService {
         // 로그인 유효 검사
         Member member = loginValid(loginRequest);
 
-        // access token 생성
-        String accessToken = jwtTokenProvider.createAccessToken(member);
-
         // refresh token 생성
+        // DB에 저장되어 있는 refresh token을 먼저 조회
+        // 없다면 refresh token을 생성하고 DB에 저장
         RefreshToken refreshTokenEntity = refreshTokenRepository.findByMemberId(member.getId())
-                .orElse(null);
+                .orElseGet(() -> refreshTokenRepository.save(RefreshToken.builder()
+                        .member(member)
+                        .token(jwtTokenProvider.createRefreshToken(member))
+                        .build()));
 
-        String refreshToken;
-        if (refreshTokenEntity == null || !jwtTokenProvider.validateToken(refreshTokenEntity.getToken())) {
-            refreshToken = jwtTokenProvider.createRefreshToken(member);
-            refreshTokenEntity = RefreshToken.builder()
-                    .member(member)
-                    .token(refreshToken)
-                    .build();
-            refreshTokenRepository.save(refreshTokenEntity);
-        }
+        // access token 생성
+        String accessToken = jwtTokenProvider.createAccessToken(member, refreshTokenEntity.getId());
+
 
         // LoginResponse dto 생성
         return LoginResponse.builder()
@@ -66,6 +64,22 @@ public class MemberService {
                 .username(member.getUsername())
                 .accessToken(accessToken)
                 .build();
+    }
+
+    // 회원정보 조회 로직
+    public MemberResponse getMemberInfo(String authHeader) {
+
+        // header의 Bearer 제거
+        String token = authHeader.substring(7);
+
+        // JWT 토큰 파싱
+        Claims claims = jwtTokenProvider.parseJwtToken(token);
+
+        // 유저 조회
+        Member member = memberRepository.findById(claims.get("memberId", Long.class))
+                .orElseThrow(() -> new RuntimeException("member id가 유효하지 않습니다."));
+
+        return MemberResponse.from(member);
     }
 
     // 회원가입 유효 검사
@@ -93,7 +107,7 @@ public class MemberService {
 
         // 조회된 유저의 비밀번호와 signupRequest의 비밀번호가 일치하는지 검증
         if (!member.getPassword().equals(loginRequest.getPassword()))
-            throw new RuntimeException();
+            throw new RuntimeException("유효하지 않은 이메일, 비밀번호입니다.");
 
         return member;
     }
