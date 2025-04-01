@@ -16,20 +16,21 @@ public class Member extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "email", nullable = false, unique = true)
     private String email;
 
+    @Column(name = "password")
     private String password;
 
-    @Column(nullable = false)
+    @Column(name = "username", nullable = false)
     private String username;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "login_type", nullable = false)
     private LoginType loginType;
 
     @Enumerated(EnumType.STRING) // Enum을 문자열로 저장
-    @Column(nullable = false)
+    @Column(name = "status", nullable = false)
     private MemberStatus status = MemberStatus.ACTIVE;
 
     @Builder
