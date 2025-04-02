@@ -1,10 +1,13 @@
 package com.capstone.HisTour.domain.heritage.service;
 
 import com.capstone.HisTour.domain.heritage.domain.Heritage;
+import com.capstone.HisTour.domain.heritage.dto.HeritageNearbyResponse;
 import com.capstone.HisTour.domain.heritage.dto.HeritageResponse;
 import com.capstone.HisTour.domain.heritage.repository.HeritageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -21,5 +24,15 @@ public class HeritageService {
 
         // HeritageResponse 반환
         return HeritageResponse.from(heritage);
+    }
+
+    // 근처 유적지 리스트 조회
+    public HeritageNearbyResponse getHeritageNearby(double latitude, double longitude, double radius) {
+
+        // 위도, 경도, radius를 사용하여 근처 유적지 조회
+        List<Heritage> heritagesNearby = heritageRepository.findNearbyHeritages(latitude, longitude, radius);
+
+        // List<HeritageNearbyResponse> 반환
+        return HeritageNearbyResponse.from(heritagesNearby);
     }
 }

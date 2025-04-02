@@ -1,15 +1,15 @@
 package com.capstone.HisTour.domain.heritage.controller;
 
+import com.capstone.HisTour.domain.heritage.dto.HeritageNearbyResponse;
 import com.capstone.HisTour.domain.heritage.dto.HeritageResponse;
 import com.capstone.HisTour.domain.heritage.service.HeritageService;
 import com.capstone.HisTour.global.DefaultResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/heritages")
@@ -37,6 +37,24 @@ public class HeritageController {
     }
 
     // 근처 유적지 조회
+    @GetMapping("/nearby")
+    public ResponseEntity<DefaultResponse<HeritageNearbyResponse>> getHeritageNearby(
+            @RequestParam Double latitude,
+            @RequestParam Double longitude,
+            @RequestParam(defaultValue = "5") double radius) {
 
-    // 유적지 검색
+        // 근처 유적지 조회
+        HeritageNearbyResponse heritageResponses = heritageService.getHeritageNearby(latitude, longitude, radius);
+
+        // ResponseDto 생성
+        DefaultResponse<HeritageNearbyResponse> response = DefaultResponse.response(
+                "근처 유적지 조회 성공",
+                heritageResponses
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(response);
+    }
+
 }
