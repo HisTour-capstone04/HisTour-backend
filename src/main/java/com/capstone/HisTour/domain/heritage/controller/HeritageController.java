@@ -57,4 +57,21 @@ public class HeritageController {
                 .body(response);
     }
 
+    // 유적지 검색
+    @GetMapping
+    public ResponseEntity<DefaultResponse<List<HeritageResponse>>> searchHeritagesByName(@RequestParam String name) {
+
+        // 이름으로 유적지 조회
+        List<HeritageResponse> heritageResponses = heritageService.searchHeritageByName(name);
+
+        // ResponseDto 생성
+        DefaultResponse<List<HeritageResponse>> response = DefaultResponse.response(
+                "유적지 이름으로 조회 성공",
+                heritageResponses
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(response);
+    }
 }

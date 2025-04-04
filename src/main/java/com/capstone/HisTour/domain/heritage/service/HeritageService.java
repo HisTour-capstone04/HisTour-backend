@@ -32,7 +32,20 @@ public class HeritageService {
         // 위도, 경도, radius를 사용하여 근처 유적지 조회
         List<Heritage> heritagesNearby = heritageRepository.findNearbyHeritages(latitude, longitude, radius);
 
-        // List<HeritageNearbyResponse> 반환
+        // HeritageNearbyResponse 반환
         return HeritageNearbyResponse.from(heritagesNearby);
+    }
+
+    // 유적지 이름으로 조회
+    public List<HeritageResponse> searchHeritageByName(String name) {
+
+        // heritage 이름으로 검색
+        List<Heritage> heritages = heritageRepository.findByNameContainingIgnoreCase(name);
+
+        // List<HeritageResponse> 반환
+        return heritages.stream()
+                .map(HeritageResponse::from)
+                .toList();
+
     }
 }

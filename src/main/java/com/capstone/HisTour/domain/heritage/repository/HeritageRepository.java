@@ -20,4 +20,7 @@ public interface HeritageRepository extends JpaRepository<Heritage, Long> {
     List<Heritage> findNearbyHeritages(@Param("latitude") double latitude,
                                        @Param("longitude") double longitude,
                                        @Param("radius") double radius);
+
+    // 유사 검색을 위한 메서드
+    List<Heritage> findByNameContainingIgnoreCase(String name);
 }
