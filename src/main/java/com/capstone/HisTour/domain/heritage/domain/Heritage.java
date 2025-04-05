@@ -37,13 +37,25 @@ public class Heritage {
     @Column(name = "geom", nullable = false)
     private Point geom;
 
+    @Column(name = "ccbakdcd")
+    private String categoryCode;
+
+    @Column(name = "ccbaasno")
+    private String manageNum;
+
+    @Column(name = "ccbactcd")
+    private String locationCode;
+
     @Builder
-    public Heritage(String name, String category, String detailAddress, String description, Region region, Point geom) {
+    public Heritage(String name, String category, String detailAddress, String description, Region region, Point geom, String categoryCode, String manageNum, String locationCode) {
         this.name = name;
         this.category = category;
         this.detailAddress = detailAddress;
         this.description = description;
         this.region = region;
         this.geom = geom;
+        this.categoryCode = categoryCode;
+        this.manageNum = manageNum;
+        this.locationCode = locationCode;
     }
 }

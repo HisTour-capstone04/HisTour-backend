@@ -5,8 +5,18 @@ import com.capstone.HisTour.domain.heritage.dto.HeritageNearbyResponse;
 import com.capstone.HisTour.domain.heritage.dto.HeritageResponse;
 import com.capstone.HisTour.domain.heritage.repository.HeritageRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -14,6 +24,7 @@ import java.util.List;
 public class HeritageService {
 
     private final HeritageRepository heritageRepository;
+    private final RestClient restClient;
 
     // 특정 유적지 조회
     public HeritageResponse getHeritageById(Long id) {
@@ -22,8 +33,17 @@ public class HeritageService {
         Heritage heritage = heritageRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("해당 id를 가진 Heritage가 존재하지 않습니다."));
 
+        // ccbakdcd, ccbaasno, ccbactcd를 이용하여 이미지 url 추출하기
+        String ccbakdcd = heritage.getCategoryCode();
+        String ccbaasno = heritage.getManageNum();
+        String ccbactcd = heritage.getLocationCode();
+
+        List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
+
+        System.out.println(imageUrls);
+
         // HeritageResponse 반환
-        return HeritageResponse.from(heritage);
+        return HeritageResponse.from(heritage, imageUrls);
     }
 
     // 근처 유적지 리스트 조회
@@ -32,8 +52,22 @@ public class HeritageService {
         // 위도, 경도, radius를 사용하여 근처 유적지 조회
         List<Heritage> heritagesNearby = heritageRepository.findNearbyHeritages(latitude, longitude, radius);
 
+        List<HeritageResponse> heritageResponses = heritagesNearby.stream().map(heritage -> {
+            String ccbakdcd = heritage.getCategoryCode();
+            String ccbaasno = heritage.getManageNum();
+            String ccbactcd = heritage.getLocationCode();
+
+            List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
+
+            return HeritageResponse.from(heritage, imageUrls);
+        })
+                .toList();
+
         // HeritageNearbyResponse 반환
-        return HeritageNearbyResponse.from(heritagesNearby);
+        return HeritageNearbyResponse.builder()
+                .count(heritageResponses.size())
+                .heritages(heritageResponses)
+                .build();
     }
 
     // 유적지 이름으로 조회
@@ -44,8 +78,60 @@ public class HeritageService {
 
         // List<HeritageResponse> 반환
         return heritages.stream()
-                .map(HeritageResponse::from)
+                .map(heritage -> {
+                    String ccbakdcd = heritage.getCategoryCode();
+                    String ccbaasno = heritage.getManageNum();
+                    String ccbactcd = heritage.getLocationCode();
+
+                    List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
+
+                    return HeritageResponse.from(heritage, imageUrls);
+                })
                 .toList();
 
+    }
+
+    // heritage image url 가져오기
+    private List<String> getImageUrls(String ccbaKdcd, String ccbaAsno, String ccbaCtcd) {
+
+        String url = "https://www.khs.go.kr/cha/SearchImageOpenapi.do" +
+                "?ccbaKdcd=" + ccbaKdcd +
+                "&ccbaAsno=" + ccbaAsno +
+                "&ccbaCtcd=" + ccbaCtcd;
+
+        String xmlString = restClient.get()
+                .uri(url)
+                .accept(MediaType.APPLICATION_XML)
+                .retrieve()
+                .body(String.class);
+
+        return parseImageUrl(xmlString);
+    }
+
+    // xml 파싱해서 image url 추출
+    private List<String> parseImageUrl(String xmlString) {
+        List<String> imageUrls = new ArrayList<>();
+
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+
+            // 문자열 -> InputStream -> Document
+            ByteArrayInputStream input = new ByteArrayInputStream(xmlString.getBytes(StandardCharsets.UTF_8));
+            Document doc = builder.parse(input);
+
+            // 모든 <imageUrl> 태그 찾기
+            NodeList imageUrlNodes = doc.getElementsByTagName("imageUrl");
+
+            for (int i = 0; i < imageUrlNodes.getLength(); i++) {
+                Node imageUrlNode = imageUrlNodes.item(i);
+                String url = imageUrlNode.getTextContent().trim();
+                imageUrls.add(url);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return imageUrls;
     }
 }
