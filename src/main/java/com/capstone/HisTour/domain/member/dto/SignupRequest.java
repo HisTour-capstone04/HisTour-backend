@@ -1,6 +1,5 @@
 package com.capstone.HisTour.domain.member.dto;
 
-import com.capstone.HisTour.domain.member.domain.Member;
 import lombok.Getter;
 
 @Getter
