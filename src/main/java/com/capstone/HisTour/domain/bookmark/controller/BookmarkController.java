@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestClient;
 
 @RestController
 @RequestMapping("/api/bookmarks")
@@ -20,7 +19,6 @@ public class BookmarkController {
 
     private final BookmarkService bookmarkService;
     private final JwtTokenProvider jwtTokenProvider;
-    private final RestClient restClient;
 
     // 북마크 추가
     @PostMapping

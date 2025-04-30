@@ -1,7 +1,7 @@
 FROM openjdk:17-jdk
 
-WORKDIR /app
+ARG JAR_FILE=build/libs/*.jar
 
-COPY build/libs/HisTour-0.0.1-SNAPSHOT.jar HisTour.jar
+COPY ${JAR_FILE} HisTour.jar
 
 CMD ["java", "-jar", "HisTour.jar"]
