@@ -1,4 +1,4 @@
-package com.capstone.HisTour.domain.bookmark.dto;
+package com.capstone.HisTour.domain.visited.dto;
 
 import com.capstone.HisTour.domain.heritage.dto.HeritageResponse;
 import lombok.Builder;
@@ -8,12 +8,12 @@ import java.util.List;
 
 @Getter
 @Builder
-public class BookmarkListResponse {
+public class VisitedListResponse {
     private int count;
     private List<HeritageResponse> heritages;
 
-    public static BookmarkListResponse from(List<HeritageResponse> heritageResponses) {
-        return BookmarkListResponse.builder()
+    public static VisitedListResponse from(List<HeritageResponse> heritageResponses) {
+        return VisitedListResponse.builder()
                 .count(heritageResponses.size())
                 .heritages(heritageResponses)
                 .build();
