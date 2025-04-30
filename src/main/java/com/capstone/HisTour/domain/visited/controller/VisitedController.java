@@ -1,5 +1,6 @@
 package com.capstone.HisTour.domain.visited.controller;
 
+import com.capstone.HisTour.domain.visited.dto.VisitedListResponse;
 import com.capstone.HisTour.domain.visited.dto.VisitedRequest;
 import com.capstone.HisTour.domain.visited.service.VisitedService;
 import com.capstone.HisTour.global.DefaultResponse;
@@ -21,7 +22,6 @@ public class VisitedController {
     @PostMapping
     public ResponseEntity<DefaultResponse<String>> addVisited(@RequestHeader(value = "Authorization") String token,
                                                               @RequestBody VisitedRequest visitedRequest) {
-
         // memberId 추출
         Long memberId = getMemberIdFromToken(token);
 
@@ -35,6 +35,25 @@ public class VisitedController {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
+                .body(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<DefaultResponse<VisitedListResponse>> getVisitedList(@RequestHeader(value = "Authorization") String token) {
+
+        // memberId 추출
+        Long memberId = getMemberIdFromToken(token);
+
+        // service 위임
+        VisitedListResponse visitedListResponse = visitedService.getVisitedList(memberId);
+
+        DefaultResponse<VisitedListResponse> response = DefaultResponse.response(
+                "방문지 조회 완료",
+                visitedListResponse
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
                 .body(response);
     }
 
