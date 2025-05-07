@@ -2,6 +2,7 @@ package com.capstone.HisTour.domain.bookmark.domain;
 
 import com.capstone.HisTour.domain.heritage.domain.Heritage;
 import com.capstone.HisTour.domain.member.domain.Member;
+import com.capstone.HisTour.global.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 @Table(name = "bookmark")
 @NoArgsConstructor
 @Getter
-public class Bookmark {
+public class Bookmark extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
