@@ -4,7 +4,9 @@ import com.capstone.HisTour.domain.heritage.dto.HeritageNearbyResponse;
 import com.capstone.HisTour.domain.heritage.dto.HeritageResponse;
 import com.capstone.HisTour.domain.heritage.service.HeritageService;
 import com.capstone.HisTour.global.DefaultResponse;
+import com.capstone.HisTour.global.annotation.MeasureExecutionTime;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,12 +16,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/heritages")
 @RequiredArgsConstructor
+@Slf4j
 public class HeritageController {
 
     private final HeritageService heritageService;
 
     // 특정 유적지 조회
     @GetMapping("/{id}")
+    @MeasureExecutionTime
     public ResponseEntity<DefaultResponse<HeritageResponse>> getHeritageById(@PathVariable Long id) {
 
         // 유적지 조회
