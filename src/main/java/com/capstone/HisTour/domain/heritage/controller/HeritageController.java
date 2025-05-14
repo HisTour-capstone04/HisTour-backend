@@ -42,6 +42,7 @@ public class HeritageController {
 
     // 근처 유적지 조회
     @GetMapping("/nearby")
+    @MeasureExecutionTime
     public ResponseEntity<DefaultResponse<HeritageNearbyResponse>> getHeritageNearby(
             @RequestParam Double latitude,
             @RequestParam Double longitude,
@@ -63,6 +64,7 @@ public class HeritageController {
 
     // 유적지 검색
     @GetMapping
+    @MeasureExecutionTime
     public ResponseEntity<DefaultResponse<List<HeritageResponse>>> searchHeritagesByName(@RequestParam String name) {
 
         // 이름으로 유적지 조회

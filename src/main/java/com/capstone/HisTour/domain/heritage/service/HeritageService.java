@@ -4,6 +4,7 @@ import com.capstone.HisTour.domain.heritage.domain.Heritage;
 import com.capstone.HisTour.domain.heritage.dto.HeritageNearbyResponse;
 import com.capstone.HisTour.domain.heritage.dto.HeritageResponse;
 import com.capstone.HisTour.domain.heritage.repository.HeritageRepository;
+import com.capstone.HisTour.global.annotation.MeasureExecutionTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -125,7 +126,7 @@ public class HeritageService {
                 "&ccbaAsno=" + ccbaAsno +
                 "&ccbaCtcd=" + ccbaCtcd;
 
-        System.out.println(url);
+        //System.out.println(url);
 
         String xmlString = restClient.get()
                 .uri(url)
