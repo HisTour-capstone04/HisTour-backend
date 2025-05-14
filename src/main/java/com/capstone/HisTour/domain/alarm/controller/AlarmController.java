@@ -1,6 +1,7 @@
 package com.capstone.HisTour.domain.alarm.controller;
 
 import com.capstone.HisTour.domain.alarm.dto.AlarmRequest;
+import com.capstone.HisTour.domain.alarm.dto.AlarmResponse;
 import com.capstone.HisTour.domain.alarm.service.AlarmService;
 import com.capstone.HisTour.global.DefaultResponse;
 import com.capstone.HisTour.global.auth.jwt.JwtTokenProvider;
@@ -9,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/notification")
@@ -31,6 +34,23 @@ public class AlarmController {
 
         DefaultResponse<String> response = DefaultResponse.response(
                 "알람 전송 완료"
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<DefaultResponse<List<AlarmResponse>>> getAllNotifications(@RequestHeader(name = "Authorization") String token) {
+
+        Long memberId = getMemberIdFromToken(token);
+
+        List<AlarmResponse> alarmResponses = alarmService.getAllAlarms(memberId);
+
+        DefaultResponse<List<AlarmResponse>> response = DefaultResponse.response(
+                "알람 조회 완료",
+                alarmResponses
         );
 
         return ResponseEntity

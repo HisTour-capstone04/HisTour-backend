@@ -2,6 +2,7 @@ package com.capstone.HisTour.domain.alarm.service;
 
 import com.capstone.HisTour.domain.alarm.domain.Alarm;
 import com.capstone.HisTour.domain.alarm.dto.AlarmRequest;
+import com.capstone.HisTour.domain.alarm.dto.AlarmResponse;
 import com.capstone.HisTour.domain.alarm.repository.AlarmRepository;
 import com.capstone.HisTour.domain.heritage.dto.HeritageNearbyResponse;
 import com.capstone.HisTour.domain.heritage.dto.HeritageResponse;
@@ -16,11 +17,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -76,4 +77,13 @@ public class AlarmService {
         log.info("Push Response: {}", response.getBody());
     }
 
+    public List<AlarmResponse> getAllAlarms(Long memberId) {
+
+        return alarmRepository.findByMember(
+                memberRepository.findById(memberId)
+                        .orElseThrow(() -> new RuntimeException("해당 멤버가 존재하지 않습니다."))
+        ).stream()
+                .map(AlarmResponse::from)
+                .toList();
+    }
 }
