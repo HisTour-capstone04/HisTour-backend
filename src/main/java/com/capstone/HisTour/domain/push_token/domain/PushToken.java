@@ -26,6 +26,9 @@ public class PushToken extends BaseTimeEntity {
     @Column(name = "push_token")
     private String pushToken;
 
+    @Column(name = "device_id")
+    private String deviceId;
+
     @Builder
     public PushToken(Member member, String pushToken) {
         this.member = member;

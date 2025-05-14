@@ -1,6 +1,5 @@
 package com.capstone.HisTour.domain.push_token.controller;
 
-import com.capstone.HisTour.domain.push_token.domain.PushToken;
 import com.capstone.HisTour.domain.push_token.dto.PushTokenRequest;
 import com.capstone.HisTour.domain.push_token.service.PushTokenService;
 import com.capstone.HisTour.global.DefaultResponse;

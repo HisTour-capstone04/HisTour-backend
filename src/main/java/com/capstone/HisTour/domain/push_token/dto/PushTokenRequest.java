@@ -5,4 +5,5 @@ import lombok.Getter;
 @Getter
 public class PushTokenRequest {
     private String pushToken;
+    private String deviceId;
 }
