@@ -20,8 +20,9 @@ public class ChatbotController {
     private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping
-    public ResponseEntity<DefaultResponse<ChatbotResponse>> askChatbot(@RequestHeader(value = "Authorization") String token,
-                                                              @RequestBody ChatRequest chatRequest) {
+    public ResponseEntity<DefaultResponse<ChatbotResponse>> askChatbot(
+            @RequestHeader(value = "Authorization") String token,
+            @RequestBody ChatRequest chatRequest) {
 
         // memberId 추출
         long memberId = getMemberIdFromToken(token);

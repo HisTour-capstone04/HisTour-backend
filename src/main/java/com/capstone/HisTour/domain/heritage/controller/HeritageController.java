@@ -4,7 +4,9 @@ import com.capstone.HisTour.domain.heritage.dto.HeritageNearbyResponse;
 import com.capstone.HisTour.domain.heritage.dto.HeritageResponse;
 import com.capstone.HisTour.domain.heritage.service.HeritageService;
 import com.capstone.HisTour.global.DefaultResponse;
+import com.capstone.HisTour.global.annotation.MeasureExecutionTime;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,12 +16,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/heritages")
 @RequiredArgsConstructor
+@Slf4j
 public class HeritageController {
 
     private final HeritageService heritageService;
 
     // 특정 유적지 조회
     @GetMapping("/{id}")
+    @MeasureExecutionTime
     public ResponseEntity<DefaultResponse<HeritageResponse>> getHeritageById(@PathVariable Long id) {
 
         // 유적지 조회
@@ -38,6 +42,7 @@ public class HeritageController {
 
     // 근처 유적지 조회
     @GetMapping("/nearby")
+    @MeasureExecutionTime
     public ResponseEntity<DefaultResponse<HeritageNearbyResponse>> getHeritageNearby(
             @RequestParam Double latitude,
             @RequestParam Double longitude,
@@ -59,6 +64,7 @@ public class HeritageController {
 
     // 유적지 검색
     @GetMapping
+    @MeasureExecutionTime
     public ResponseEntity<DefaultResponse<List<HeritageResponse>>> searchHeritagesByName(@RequestParam String name) {
 
         // 이름으로 유적지 조회

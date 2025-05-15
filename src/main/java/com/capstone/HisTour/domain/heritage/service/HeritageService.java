@@ -4,6 +4,7 @@ import com.capstone.HisTour.domain.heritage.domain.Heritage;
 import com.capstone.HisTour.domain.heritage.dto.HeritageNearbyResponse;
 import com.capstone.HisTour.domain.heritage.dto.HeritageResponse;
 import com.capstone.HisTour.domain.heritage.repository.HeritageRepository;
+import com.capstone.HisTour.global.annotation.MeasureExecutionTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -38,9 +39,17 @@ public class HeritageService {
         String ccbaasno = heritage.getManageNum();
         String ccbactcd = heritage.getLocationCode();
 
-        List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
 
-        System.out.println(imageUrls);
+        // 소수점 제거 로직
+        if (ccbactcd != null && ccbactcd.endsWith(".0")) {
+            ccbactcd = ccbactcd.substring(0, ccbactcd.length() - 2); // ".0" 제거
+        }
+
+        if (ccbakdcd != null && ccbakdcd.endsWith(".0")) {
+            ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2); // ".0" 제거
+        }
+
+        List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
 
         // HeritageResponse 반환
         return HeritageResponse.from(heritage, imageUrls);
@@ -56,6 +65,15 @@ public class HeritageService {
             String ccbakdcd = heritage.getCategoryCode();
             String ccbaasno = heritage.getManageNum();
             String ccbactcd = heritage.getLocationCode();
+
+            // 소수점 제거 로직
+            if (ccbactcd != null && ccbactcd.endsWith(".0")) {
+                ccbactcd = ccbactcd.substring(0, ccbactcd.length() - 2); // ".0" 제거
+            }
+
+            if (ccbakdcd != null && ccbakdcd.endsWith(".0")) {
+                ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2); // ".0" 제거
+            }
 
             List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
 
@@ -83,6 +101,15 @@ public class HeritageService {
                     String ccbaasno = heritage.getManageNum();
                     String ccbactcd = heritage.getLocationCode();
 
+                    // 소수점 제거 로직
+                    if (ccbactcd != null && ccbactcd.endsWith(".0")) {
+                        ccbactcd = ccbactcd.substring(0, ccbactcd.length() - 2); // ".0" 제거
+                    }
+
+                    if (ccbakdcd != null && ccbakdcd.endsWith(".0")) {
+                        ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2); // ".0" 제거
+                    }
+
                     List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
 
                     return HeritageResponse.from(heritage, imageUrls);
@@ -98,6 +125,8 @@ public class HeritageService {
                 "?ccbaKdcd=" + ccbaKdcd +
                 "&ccbaAsno=" + ccbaAsno +
                 "&ccbaCtcd=" + ccbaCtcd;
+
+        //System.out.println(url);
 
         String xmlString = restClient.get()
                 .uri(url)
@@ -130,6 +159,7 @@ public class HeritageService {
             }
         } catch (Exception e) {
             e.printStackTrace();
+            return null;
         }
 
         return imageUrls;

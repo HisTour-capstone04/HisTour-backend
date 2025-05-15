@@ -5,4 +5,6 @@ import lombok.Getter;
 @Getter
 public class ChatRequest {
     private String question;
+    private Double latitude;
+    private Double longitude;
 }

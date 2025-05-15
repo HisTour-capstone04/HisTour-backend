@@ -24,6 +24,7 @@ public class ChatHistory {
 
     private String question;
 
+    @Column(columnDefinition = "TEXT")
     private String answer;
 
     private LocalDateTime timestamp;
