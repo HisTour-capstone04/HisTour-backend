@@ -36,6 +36,12 @@ public class BookmarkService {
         Heritage heritage = heritageRepository.findById(bookmarkRequest.getHeritageId())
                 .orElseThrow(() -> new RuntimeException("해당 유적지가 존재하지 않습니다."));
 
+        // 유저의 bookmark 조회
+        boolean isDuplicate = bookmarkRepository.existsByMemberIdAndHeritageId(member.getId(), heritage.getId());
+
+        if (isDuplicate)
+            throw new RuntimeException("이미 북마크로 등록되어있는 유적지입니다.");
+
         Bookmark bookmark = new Bookmark(member, heritage);
         bookmark.setCreatedAt(LocalDateTime.now());
 
