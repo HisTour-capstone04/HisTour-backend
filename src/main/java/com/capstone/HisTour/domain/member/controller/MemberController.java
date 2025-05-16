@@ -20,14 +20,15 @@ public class MemberController {
 
     // 회원가입
     @PostMapping("/signup")
-    public ResponseEntity<DefaultResponse<String>> signup(@RequestBody SignupRequest signupRequest) {
+    public ResponseEntity<DefaultResponse<MemberResponse>> signup(@RequestBody SignupRequest signupRequest) {
 
         //회원가입 처리 로직
-        memberService.signUp(signupRequest);
+        MemberResponse memberResponse = memberService.signUp(signupRequest);
 
         // DefaultResponseDto 생성
-        DefaultResponse<String> response = DefaultResponse.response(
-                "회원 가입이 완료되었습니다."
+        DefaultResponse<MemberResponse> response = DefaultResponse.response(
+                "회원 가입이 완료되었습니다.",
+                memberResponse
         );
 
         return ResponseEntity
