@@ -1,11 +1,11 @@
 package com.capstone.HisTour.domain.heritage.service;
 
 import com.capstone.HisTour.domain.heritage.domain.Heritage;
-import com.capstone.HisTour.domain.heritage.dto.HeritageNearbyResponse;
+import com.capstone.HisTour.domain.heritage.dto.HeritageListResponse;
 import com.capstone.HisTour.domain.heritage.dto.HeritageResponse;
 import com.capstone.HisTour.domain.heritage.repository.HeritageRepository;
-import com.capstone.HisTour.global.annotation.MeasureExecutionTime;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -22,6 +22,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class HeritageService {
 
     private final HeritageRepository heritageRepository;
@@ -56,7 +57,7 @@ public class HeritageService {
     }
 
     // 근처 유적지 리스트 조회
-    public HeritageNearbyResponse getHeritageNearby(double latitude, double longitude, double radius) {
+    public HeritageListResponse getHeritageNearby(double latitude, double longitude, double radius) {
 
         // 위도, 경도, radius를 사용하여 근처 유적지 조회
         List<Heritage> heritagesNearby = heritageRepository.findNearbyHeritages(latitude, longitude, radius);
@@ -82,20 +83,20 @@ public class HeritageService {
                 .toList();
 
         // HeritageNearbyResponse 반환
-        return HeritageNearbyResponse.builder()
+        return HeritageListResponse.builder()
                 .count(heritageResponses.size())
                 .heritages(heritageResponses)
                 .build();
     }
 
     // 유적지 이름으로 조회
-    public List<HeritageResponse> searchHeritageByName(String name) {
+    public HeritageListResponse searchHeritageByName(String name) {
 
         // heritage 이름으로 검색
         List<Heritage> heritages = heritageRepository.findByNameContainingIgnoreCase(name);
 
         // List<HeritageResponse> 반환
-        return heritages.stream()
+        List<HeritageResponse> heritageResponseList = heritages.stream()
                 .map(heritage -> {
                     String ccbakdcd = heritage.getCategoryCode();
                     String ccbaasno = heritage.getManageNum();
@@ -116,6 +117,54 @@ public class HeritageService {
                 })
                 .toList();
 
+        return HeritageListResponse.builder()
+                .count(heritageResponseList.size())
+                .heritages(heritageResponseList)
+                .build();
+    }
+
+    // 경로상에 있는 유적지 조회
+    public HeritageListResponse searchHeritageInRoute(double srcLatitude, double srcLongitude, double destLatitude, double destLongitude) {
+
+        // 중간 좌표의 (위도, 경도) 추출
+        double[] midpoint = getMidpoint(srcLatitude, srcLongitude, destLatitude, destLongitude);
+
+        double midLatitude = midpoint[0];
+        double midLongitude = midpoint[1];
+
+        log.info("latitude: {}, longitude: {}", midLatitude, midLongitude);
+
+        // 두 지점 사이의 거리 계산
+        double distance = calculateDistance(srcLatitude, srcLongitude, destLatitude, destLongitude);
+        log.info("distance: {}", distance);
+
+        List<Heritage> heritages = heritageRepository.findNearbyHeritages(midLatitude, midLongitude, distance/2);
+
+        List<HeritageResponse> heritageResponseList = heritages.stream()
+                .map(heritage -> {
+                    String ccbakdcd = heritage.getCategoryCode();
+                    String ccbaasno = heritage.getManageNum();
+                    String ccbactcd = heritage.getLocationCode();
+
+                    // 소수점 제거 로직
+                    if (ccbactcd != null && ccbactcd.endsWith(".0")) {
+                        ccbactcd = ccbactcd.substring(0, ccbactcd.length() - 2); // ".0" 제거
+                    }
+
+                    if (ccbakdcd != null && ccbakdcd.endsWith(".0")) {
+                        ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2); // ".0" 제거
+                    }
+
+                    List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
+
+                    return HeritageResponse.from(heritage, imageUrls);
+                })
+                .toList();
+
+        return HeritageListResponse.builder()
+                .count(heritageResponseList.size())
+                .heritages(heritageResponseList)
+                .build();
     }
 
     // heritage image url 가져오기
@@ -163,5 +212,48 @@ public class HeritageService {
         }
 
         return imageUrls;
+    }
+
+    // 좌표 2개의 mid point 추출
+    private double[] getMidpoint(double lat1, double lon1, double lat2, double lon2) {
+
+        // convert to radians
+        lat1 = Math.toRadians(lat1);
+        lon1 = Math.toRadians(lon1);
+        lat2 = Math.toRadians(lat2);
+        lon2 = Math.toRadians(lon2);
+
+        double dLon = lon2 - lon1;
+
+        double bx = Math.cos(lat2) * Math.cos(dLon);
+        double by = Math.cos(lat2) * Math.sin(dLon);
+
+        double lat3 = Math.atan2(
+                Math.sin(lat1) + Math.sin(lat2),
+                Math.sqrt((Math.cos(lat1) + bx) * (Math.cos(lat1) + bx) + by * by)
+        );
+        double lon3 = lon1 + Math.atan2(by, Math.cos(lat1) + bx);
+
+        // 라디안 -> 도
+        return new double[]{Math.toDegrees(lat3), Math.toDegrees(lon3)};
+    }
+
+    // 두 좌표 사이의 거리 계산
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        // 도 -> 라디안 변환
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+
+        lat1 = Math.toRadians(lat1);
+        lat2 = Math.toRadians(lat2);
+
+        // Haversine 공식
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1) * Math.cos(lat2) *
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return 6371.0 * c * 1000;
     }
 }

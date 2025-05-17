@@ -7,7 +7,7 @@ import java.util.List;
 
 @Getter
 @Builder
-public class HeritageNearbyResponse {
+public class HeritageListResponse {
     private int count;
     private List<HeritageResponse> heritages;
 }

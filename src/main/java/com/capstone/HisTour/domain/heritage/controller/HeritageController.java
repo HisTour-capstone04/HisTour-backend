@@ -1,6 +1,6 @@
 package com.capstone.HisTour.domain.heritage.controller;
 
-import com.capstone.HisTour.domain.heritage.dto.HeritageNearbyResponse;
+import com.capstone.HisTour.domain.heritage.dto.HeritageListResponse;
 import com.capstone.HisTour.domain.heritage.dto.HeritageResponse;
 import com.capstone.HisTour.domain.heritage.service.HeritageService;
 import com.capstone.HisTour.global.DefaultResponse;
@@ -43,16 +43,16 @@ public class HeritageController {
     // 근처 유적지 조회
     @GetMapping("/nearby")
     @MeasureExecutionTime
-    public ResponseEntity<DefaultResponse<HeritageNearbyResponse>> getHeritageNearby(
+    public ResponseEntity<DefaultResponse<HeritageListResponse>> getHeritageNearby(
             @RequestParam Double latitude,
             @RequestParam Double longitude,
             @RequestParam(defaultValue = "5") double radius) {
 
         // 근처 유적지 조회
-        HeritageNearbyResponse heritageResponses = heritageService.getHeritageNearby(latitude, longitude, radius);
+        HeritageListResponse heritageResponses = heritageService.getHeritageNearby(latitude, longitude, radius);
 
         // ResponseDto 생성
-        DefaultResponse<HeritageNearbyResponse> response = DefaultResponse.response(
+        DefaultResponse<HeritageListResponse> response = DefaultResponse.response(
                 "근처 유적지 조회 성공",
                 heritageResponses
         );
@@ -65,15 +65,36 @@ public class HeritageController {
     // 유적지 검색
     @GetMapping
     @MeasureExecutionTime
-    public ResponseEntity<DefaultResponse<List<HeritageResponse>>> searchHeritagesByName(@RequestParam String name) {
+    public ResponseEntity<DefaultResponse<HeritageListResponse>> searchHeritagesByName(@RequestParam String name) {
 
         // 이름으로 유적지 조회
-        List<HeritageResponse> heritageResponses = heritageService.searchHeritageByName(name);
+        HeritageListResponse heritageListResponse = heritageService.searchHeritageByName(name);
 
         // ResponseDto 생성
-        DefaultResponse<List<HeritageResponse>> response = DefaultResponse.response(
+        DefaultResponse<HeritageListResponse> response = DefaultResponse.response(
                 "유적지 이름으로 조회 성공",
-                heritageResponses
+                heritageListResponse
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(response);
+    }
+
+    // 경로 사이에 있는 유적지 조회
+    @GetMapping("/in-path")
+    public ResponseEntity<DefaultResponse<HeritageListResponse>> searchHeritagesInRoute(
+            @RequestParam Double srcLatitude,
+            @RequestParam Double srcLongitude,
+            @RequestParam Double destLatitude,
+            @RequestParam Double destLongitude) {
+
+        // 경로상에 있는 유적지 조회
+        HeritageListResponse heritagesInRoute = heritageService.searchHeritageInRoute(srcLatitude, srcLongitude, destLatitude, destLongitude);
+
+        DefaultResponse<HeritageListResponse> response = DefaultResponse.response(
+                "경로상에 있는 유적지 조회 성공",
+                heritagesInRoute
         );
 
         return ResponseEntity
