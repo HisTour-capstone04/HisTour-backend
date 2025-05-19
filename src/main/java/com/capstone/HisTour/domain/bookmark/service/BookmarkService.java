@@ -1,6 +1,7 @@
 package com.capstone.HisTour.domain.bookmark.service;
 
 import com.capstone.HisTour.domain.bookmark.domain.Bookmark;
+import com.capstone.HisTour.domain.bookmark.dto.BookmarkDeleteRequest;
 import com.capstone.HisTour.domain.bookmark.dto.BookmarkListResponse;
 import com.capstone.HisTour.domain.bookmark.dto.BookmarkRequest;
 import com.capstone.HisTour.domain.bookmark.dto.BookmarkResponse;
@@ -62,6 +63,22 @@ public class BookmarkService {
         List<HeritageResponse> heritageResponses = bookmarks.stream().map(bookmark -> heritageService.getHeritageById(bookmark.getHeritage().getId())).toList();
 
         return BookmarkListResponse.from(heritageResponses);
+
+    }
+
+    // 북마크 삭제
+    public void deleteBookmark(Long memberId, BookmarkDeleteRequest deleteRequest) {
+
+        // 멤버 조회
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("해당 멤버가 존재하지 않습니다."));
+
+        // 북마크 조회
+        Bookmark bookmark = bookmarkRepository.findByMemberIdAndId(member.getId(), deleteRequest.getBookmarkId())
+                .orElseThrow(() -> new RuntimeException("북마크가 존재하지 않습니다."));
+
+        // 북마크 삭제
+        bookmarkRepository.delete(bookmark);
 
     }
 }
