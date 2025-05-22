@@ -5,6 +5,8 @@ import com.capstone.HisTour.domain.heritage.dto.HeritageResponse;
 import com.capstone.HisTour.domain.heritage.service.HeritageService;
 import com.capstone.HisTour.global.DefaultResponse;
 import com.capstone.HisTour.global.annotation.MeasureExecutionTime;
+import com.capstone.HisTour.global.auth.jwt.JwtTokenProvider;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -20,6 +22,7 @@ import java.util.List;
 public class HeritageController {
 
     private final HeritageService heritageService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     // 특정 유적지 조회
     @GetMapping("/{id}")
@@ -40,16 +43,21 @@ public class HeritageController {
                 .body(response);
     }
 
-    // 근처 유적지 조회
+    // 근처 유적지 조회 후
+    // (가장 가까운 유적지 이름) + (나머지 유적지 개수) 의 문자열 반환
     @GetMapping("/nearby")
     @MeasureExecutionTime
     public ResponseEntity<DefaultResponse<HeritageListResponse>> getHeritageNearby(
+            @RequestHeader(value = "Authorization") String token,
             @RequestParam Double latitude,
             @RequestParam Double longitude,
             @RequestParam(defaultValue = "5") double radius) {
 
+        // memberId 추출
+        Long memberId = getMemberIdFromToken(token);
+
         // 근처 유적지 조회
-        HeritageListResponse heritageResponses = heritageService.getHeritageNearby(latitude, longitude, radius);
+        HeritageListResponse heritageResponses = heritageService.getHeritageNearby(memberId, latitude, longitude, radius);
 
         // ResponseDto 생성
         DefaultResponse<HeritageListResponse> response = DefaultResponse.response(
@@ -101,4 +109,15 @@ public class HeritageController {
                 .status(HttpStatus.OK)
                 .body(response);
     }
+
+    private Long getMemberIdFromToken(String token) {
+
+        // jwt token에서 claim 추출
+        String accessToken = token.substring(7);
+        Claims claims = jwtTokenProvider.parseJwtToken(accessToken);
+
+        // member id 추출
+        return claims.get("memberId", Long.class);
+    }
+
 }
