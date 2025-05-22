@@ -6,6 +6,7 @@ import com.capstone.HisTour.domain.heritage.dto.HeritageResponse;
 import com.capstone.HisTour.domain.heritage.repository.HeritageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -17,8 +18,8 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +28,7 @@ public class HeritageService {
 
     private final HeritageRepository heritageRepository;
     private final RestClient restClient;
+    private final RedisTemplate<String, String> redisTemplate;
 
     // 특정 유적지 조회
     public HeritageResponse getHeritageById(Long id) {
@@ -57,10 +59,40 @@ public class HeritageService {
     }
 
     // 근처 유적지 리스트 조회
-    public HeritageListResponse getHeritageNearby(double latitude, double longitude, double radius) {
+    public HeritageListResponse getHeritageNearby(Long memberId, double latitude, double longitude, double radius) {
 
         // 위도, 경도, radius를 사용하여 근처 유적지 조회
         List<Heritage> heritagesNearby = heritageRepository.findNearbyHeritages(latitude, longitude, radius);
+
+        // Redis에서 최근 본 유적지 ID 조회
+        String redisKey = "member:" + memberId + ":recent-heritage";
+        List<String> viewedIds = redisTemplate.opsForList().range(redisKey, 0, -1);
+
+        Set<Long> viewedIdSet = viewedIds != null
+                ? viewedIds.stream().map(Long::valueOf).collect(Collectors.toSet())
+                : Collections.emptySet();
+
+        // 중복 제거
+        List<Heritage> filteredHeritages = heritagesNearby.stream()
+                .filter(heritage -> !viewedIdSet.contains(heritage.getId()))
+                .toList();
+
+        if (filteredHeritages.isEmpty()) {
+            throw new NoSuchElementException("근처에 새로운 유적지가 없습니다.");
+        }
+        Heritage mostCLoseHeritage = filteredHeritages.get(0);
+
+        String message = mostCLoseHeritage.getName() + " 외 " + filteredHeritages.size() + "개의 유적지가 근처에 있습니다.";
+
+        // 👉 Redis에 새로 조회된 유적지 ID들 업데이트 (중복 제거 후만 추가)
+        List<String> newHeritageIds = filteredHeritages.stream()
+                .map(heritage -> String.valueOf(heritage.getId()))
+                .toList();
+
+        if (!newHeritageIds.isEmpty()) {
+            redisTemplate.delete(redisKey); // 기존 내용 제거 (선택사항: 덧붙이지 않으려면)
+            redisTemplate.opsForList().rightPushAll(redisKey, newHeritageIds);
+        }
 
         List<HeritageResponse> heritageResponses = heritagesNearby.stream().map(heritage -> {
             String ccbakdcd = heritage.getCategoryCode();
@@ -85,6 +117,7 @@ public class HeritageService {
         // HeritageNearbyResponse 반환
         return HeritageListResponse.builder()
                 .count(heritageResponses.size())
+                .message(message)
                 .heritages(heritageResponses)
                 .build();
     }
