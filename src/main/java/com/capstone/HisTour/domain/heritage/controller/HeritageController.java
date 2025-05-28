@@ -43,10 +43,7 @@ public class HeritageController {
                 .body(response);
     }
 
-    // 근처 유적지 조회 후
-    // (가장 가까운 유적지 이름) + (나머지 유적지 개수) 의 문자열 반환
     @GetMapping("/nearby")
-    @MeasureExecutionTime
     public ResponseEntity<DefaultResponse<HeritageListResponse>> getHeritageNearby(
             @RequestHeader(value = "Authorization") String token,
             @RequestParam Double latitude,
@@ -58,6 +55,33 @@ public class HeritageController {
 
         // 근처 유적지 조회
         HeritageListResponse heritageResponses = heritageService.getHeritageNearby(memberId, latitude, longitude, radius);
+
+        // ResponseDto 생성
+        DefaultResponse<HeritageListResponse> response = DefaultResponse.response(
+                "근처 유적지 조회 성공",
+                heritageResponses
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(response);
+    }
+
+    // 근처 유적지 조회 후
+    // (가장 가까운 유적지 이름) + (나머지 유적지 개수) 의 문자열 반환
+    @GetMapping("/nearby-for-alarm")
+    @MeasureExecutionTime
+    public ResponseEntity<DefaultResponse<HeritageListResponse>> getHeritageNearbyForAlarm(
+            @RequestHeader(value = "Authorization") String token,
+            @RequestParam Double latitude,
+            @RequestParam Double longitude,
+            @RequestParam(defaultValue = "5") double radius) {
+
+        // memberId 추출
+        Long memberId = getMemberIdFromToken(token);
+
+        // 근처 유적지 조회
+        HeritageListResponse heritageResponses = heritageService.getHeritageNearbyForAlarm(memberId, latitude, longitude, radius);
 
         // ResponseDto 생성
         DefaultResponse<HeritageListResponse> response = DefaultResponse.response(
