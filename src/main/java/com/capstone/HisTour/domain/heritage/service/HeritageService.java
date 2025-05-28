@@ -64,6 +64,39 @@ public class HeritageService {
         // 위도, 경도, radius를 사용하여 근처 유적지 조회
         List<Heritage> heritagesNearby = heritageRepository.findNearbyHeritages(latitude, longitude, radius);
 
+        List<HeritageResponse> heritageResponses = heritagesNearby.stream().map(heritage -> {
+                    String ccbakdcd = heritage.getCategoryCode();
+                    String ccbaasno = heritage.getManageNum();
+                    String ccbactcd = heritage.getLocationCode();
+
+                    // 소수점 제거 로직
+                    if (ccbactcd != null && ccbactcd.endsWith(".0")) {
+                        ccbactcd = ccbactcd.substring(0, ccbactcd.length() - 2); // ".0" 제거
+                    }
+
+                    if (ccbakdcd != null && ccbakdcd.endsWith(".0")) {
+                        ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2); // ".0" 제거
+                    }
+
+                    List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
+
+                    return HeritageResponse.from(heritage, imageUrls);
+                })
+                .toList();
+
+        // HeritageNearbyResponse 반환
+        return HeritageListResponse.builder()
+                .count(heritageResponses.size())
+                .heritages(heritageResponses)
+                .build();
+    }
+
+    // 근처 유적지 리스트 조회
+    public HeritageListResponse getHeritageNearbyForAlarm(Long memberId, double latitude, double longitude, double radius) {
+
+        // 위도, 경도, radius를 사용하여 근처 유적지 조회
+        List<Heritage> heritagesNearby = heritageRepository.findNearbyHeritages(latitude, longitude, radius);
+
         // Redis에서 최근 본 유적지 ID 조회
         String redisKey = "member:" + memberId + ":recent-heritage";
         List<String> viewedIds = redisTemplate.opsForList().range(redisKey, 0, -1);
