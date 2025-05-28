@@ -11,7 +11,7 @@ import lombok.Getter;
 public class ChatbotRequest {
 
     @JsonProperty("user_id")
-    private Long userId;
+    private String userId;
     private String question;
     private Double latitude;
     private Double longitude;
