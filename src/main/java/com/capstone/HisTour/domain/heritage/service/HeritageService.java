@@ -18,6 +18,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -98,36 +99,39 @@ public class HeritageService {
         List<Heritage> heritagesNearby = heritageRepository.findNearbyHeritages(latitude, longitude, radius);
 
         // Redis에서 최근 본 유적지 ID 조회
-        String redisKey = "member:" + memberId + ":recent-heritage";
-        List<String> viewedIds = redisTemplate.opsForList().range(redisKey, 0, -1);
+        String keyPrefix = "member:" + memberId + ":recent-heritage:";
 
-        Set<Long> viewedIdSet = viewedIds != null
-                ? viewedIds.stream().map(Long::valueOf).collect(Collectors.toSet())
-                : Collections.emptySet();
+        List<Heritage> freshHeritages = new ArrayList<>();
 
-        // 중복 제거
-        List<Heritage> filteredHeritages = heritagesNearby.stream()
-                .filter(heritage -> !viewedIdSet.contains(heritage.getId()))
-                .toList();
+        // 최근에 조회됐던 유적지를 제외하고 freshHeritages 에 추가
+        for (Heritage heritage : heritagesNearby) {
+            String key = keyPrefix + heritage.getId();
+            Boolean alreadySent = redisTemplate.hasKey(key);
 
-        if (filteredHeritages.isEmpty()) {
-            throw new NoSuchElementException("근처에 새로운 유적지가 없습니다.");
-        }
-        Heritage mostCLoseHeritage = filteredHeritages.get(0);
+            if (!Boolean.TRUE.equals(alreadySent)) {
+                freshHeritages.add(heritage);
 
-        String message = mostCLoseHeritage.getName() + " 외 " + filteredHeritages.size() + "개의 유적지가 근처에 있습니다.";
-
-        // 👉 Redis에 새로 조회된 유적지 ID들 업데이트 (중복 제거 후만 추가)
-        List<String> newHeritageIds = filteredHeritages.stream()
-                .map(heritage -> String.valueOf(heritage.getId()))
-                .toList();
-
-        if (!newHeritageIds.isEmpty()) {
-            redisTemplate.delete(redisKey); // 기존 내용 제거 (선택사항: 덧붙이지 않으려면)
-            redisTemplate.opsForList().rightPushAll(redisKey, newHeritageIds);
+                // 1시간 TTL
+                redisTemplate.opsForValue().set(key, "1", Duration.ofHours(1));
+            }
         }
 
-        List<HeritageResponse> heritageResponses = heritagesNearby.stream().map(heritage -> {
+        String message = null;
+        int others = 0;
+
+        if (!freshHeritages.isEmpty()) {
+            Heritage mostClose = freshHeritages.get(0);
+            others = freshHeritages.size() - 1;
+
+            message = others == 0
+                    ? "근처에 " + mostClose.getName() + " 유적지가 있습니다."
+                    : "근처에 " + mostClose.getName() + " 외 " + others + "개의 유적지가 근처에 있습니다.";
+        } else {
+            message = "유적지가 존재하지 않습니다.";
+        }
+
+        // Heritage -> HeritageResponse List
+        List<HeritageResponse> heritageResponses = freshHeritages.stream().map(heritage -> {
             String ccbakdcd = heritage.getCategoryCode();
             String ccbaasno = heritage.getManageNum();
             String ccbactcd = heritage.getLocationCode();
