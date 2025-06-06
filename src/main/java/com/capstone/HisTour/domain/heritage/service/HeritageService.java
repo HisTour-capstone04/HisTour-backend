@@ -84,6 +84,14 @@ public class HeritageService {
         // 위도, 경도, radius를 사용하여 근처 유적지 조회
         List<Heritage> heritagesNearby = heritageRepository.findNearbyHeritages(latitude, longitude, radius);
 
+        // 조회된 것 중 15개 무작위 추출
+        heritagesNearby = new ArrayList<>(heritagesNearby);
+        if (!heritagesNearby.isEmpty()) {
+            Collections.shuffle(heritagesNearby);
+            int limit = Math.min(15, heritagesNearby.size());
+            heritagesNearby = heritagesNearby.subList(0, limit);
+        }
+
         List<HeritageResponse> heritageResponses = heritagesNearby.stream()
                 .map(this::convertToHeritageResponse)
                 .toList();
