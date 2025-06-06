@@ -1,9 +1,21 @@
 package com.capstone.HisTour.domain.heritage.service;
 
+import com.capstone.HisTour.domain.api.service.ChatGPTService;
+import com.capstone.HisTour.domain.api.service.OpenWeatherService;
+import com.capstone.HisTour.domain.bookmark.domain.Bookmark;
+import com.capstone.HisTour.domain.bookmark.repository.BookmarkRepository;
 import com.capstone.HisTour.domain.heritage.domain.Heritage;
+import com.capstone.HisTour.domain.heritage.domain.HeritageRecommend;
 import com.capstone.HisTour.domain.heritage.dto.HeritageListResponse;
+import com.capstone.HisTour.domain.heritage.dto.HeritageRecommendListResponse;
+import com.capstone.HisTour.domain.heritage.dto.HeritageRecommendResponse;
 import com.capstone.HisTour.domain.heritage.dto.HeritageResponse;
+import com.capstone.HisTour.domain.heritage.repository.HeritageRecommendRepository;
 import com.capstone.HisTour.domain.heritage.repository.HeritageRepository;
+import com.capstone.HisTour.domain.member.domain.Member;
+import com.capstone.HisTour.domain.member.repository.MemberRepository;
+import com.capstone.HisTour.domain.visited.domain.Visited;
+import com.capstone.HisTour.domain.visited.repostiory.VisitedRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -30,6 +42,12 @@ public class HeritageService {
     private final HeritageRepository heritageRepository;
     private final RestClient restClient;
     private final RedisTemplate<String, String> redisTemplate;
+    private final VisitedRepository visitedRepository;
+    private final BookmarkRepository bookmarkRepository;
+    private final MemberRepository memberRepository;
+    private final OpenWeatherService openWeatherService;
+    private final ChatGPTService chatGPTService;
+    private final HeritageRecommendRepository recommendRepository;
 
     // 특정 유적지 조회
     public HeritageResponse getHeritageById(Long id) {
@@ -65,24 +83,8 @@ public class HeritageService {
         // 위도, 경도, radius를 사용하여 근처 유적지 조회
         List<Heritage> heritagesNearby = heritageRepository.findNearbyHeritages(latitude, longitude, radius);
 
-        List<HeritageResponse> heritageResponses = heritagesNearby.stream().map(heritage -> {
-                    String ccbakdcd = heritage.getCategoryCode();
-                    String ccbaasno = heritage.getManageNum();
-                    String ccbactcd = heritage.getLocationCode();
-
-                    // 소수점 제거 로직
-                    if (ccbactcd != null && ccbactcd.endsWith(".0")) {
-                        ccbactcd = ccbactcd.substring(0, ccbactcd.length() - 2); // ".0" 제거
-                    }
-
-                    if (ccbakdcd != null && ccbakdcd.endsWith(".0")) {
-                        ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2); // ".0" 제거
-                    }
-
-                    List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
-
-                    return HeritageResponse.from(heritage, imageUrls);
-                })
+        List<HeritageResponse> heritageResponses = heritagesNearby.stream()
+                .map(this::convertToHeritageResponse)
                 .toList();
 
         // HeritageNearbyResponse 반환
@@ -92,7 +94,7 @@ public class HeritageService {
                 .build();
     }
 
-    // 근처 유적지 리스트 조회
+    // 근처 유적지 리스트 조회 및 알람 메시지 생성
     public HeritageListResponse getHeritageNearbyForAlarm(Long memberId, double latitude, double longitude, double radius) {
 
         // 위도, 경도, radius를 사용하여 근처 유적지 조회
@@ -131,24 +133,8 @@ public class HeritageService {
         }
 
         // Heritage -> HeritageResponse List
-        List<HeritageResponse> heritageResponses = freshHeritages.stream().map(heritage -> {
-            String ccbakdcd = heritage.getCategoryCode();
-            String ccbaasno = heritage.getManageNum();
-            String ccbactcd = heritage.getLocationCode();
-
-            // 소수점 제거 로직
-            if (ccbactcd != null && ccbactcd.endsWith(".0")) {
-                ccbactcd = ccbactcd.substring(0, ccbactcd.length() - 2); // ".0" 제거
-            }
-
-            if (ccbakdcd != null && ccbakdcd.endsWith(".0")) {
-                ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2); // ".0" 제거
-            }
-
-            List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
-
-            return HeritageResponse.from(heritage, imageUrls);
-        })
+        List<HeritageResponse> heritageResponses = freshHeritages.stream()
+                .map(this::convertToHeritageResponse)
                 .toList();
 
         // HeritageNearbyResponse 반환
@@ -167,24 +153,7 @@ public class HeritageService {
 
         // List<HeritageResponse> 반환
         List<HeritageResponse> heritageResponseList = heritages.stream()
-                .map(heritage -> {
-                    String ccbakdcd = heritage.getCategoryCode();
-                    String ccbaasno = heritage.getManageNum();
-                    String ccbactcd = heritage.getLocationCode();
-
-                    // 소수점 제거 로직
-                    if (ccbactcd != null && ccbactcd.endsWith(".0")) {
-                        ccbactcd = ccbactcd.substring(0, ccbactcd.length() - 2); // ".0" 제거
-                    }
-
-                    if (ccbakdcd != null && ccbakdcd.endsWith(".0")) {
-                        ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2); // ".0" 제거
-                    }
-
-                    List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
-
-                    return HeritageResponse.from(heritage, imageUrls);
-                })
+                .map(this::convertToHeritageResponse)
                 .toList();
 
         return HeritageListResponse.builder()
@@ -211,29 +180,103 @@ public class HeritageService {
         List<Heritage> heritages = heritageRepository.findNearbyHeritages(midLatitude, midLongitude, distance/2);
 
         List<HeritageResponse> heritageResponseList = heritages.stream()
-                .map(heritage -> {
-                    String ccbakdcd = heritage.getCategoryCode();
-                    String ccbaasno = heritage.getManageNum();
-                    String ccbactcd = heritage.getLocationCode();
-
-                    // 소수점 제거 로직
-                    if (ccbactcd != null && ccbactcd.endsWith(".0")) {
-                        ccbactcd = ccbactcd.substring(0, ccbactcd.length() - 2); // ".0" 제거
-                    }
-
-                    if (ccbakdcd != null && ccbakdcd.endsWith(".0")) {
-                        ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2); // ".0" 제거
-                    }
-
-                    List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
-
-                    return HeritageResponse.from(heritage, imageUrls);
-                })
+                .map(this::convertToHeritageResponse)
                 .toList();
 
         return HeritageListResponse.builder()
                 .count(heritageResponseList.size())
                 .heritages(heritageResponseList)
+                .build();
+    }
+
+    // 유적지 추천
+    public HeritageRecommendListResponse recommendHeritages(Long memberId, double latitude, double longitude) {
+
+        // member 조회
+        Member foundMember = memberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+
+        // repository에서 조회
+        List<HeritageRecommend> recommends = recommendRepository.findAllByMember(foundMember);
+
+        if (!recommends.isEmpty()) {
+            List<HeritageRecommendResponse> recommendResponses = recommends.stream()
+                    .map(h -> {
+                        Heritage heritage = h.getHeritage();
+                        String reason = h.getReason();
+
+                        return covertToHeritageRecommendResponse(heritage, reason);
+                    })
+                    .toList();
+
+            return HeritageRecommendListResponse.builder()
+                    .count(recommendResponses.size())
+                    .recommendations(recommendResponses)
+                    .build();
+        }
+
+        // 방문했던 유적지 조회
+        List<Heritage> visitedHeritages = visitedRepository.findAllByMemberId(foundMember.getId())
+                .stream()
+                .map(Visited::getHeritage)
+                .toList();
+
+        // 북마크헀던 유적지 조회
+        List<Heritage> bookmarkedHeritages = bookmarkRepository.findAllByMemberId(foundMember.getId())
+                .stream()
+                .map(Bookmark::getHeritage)
+                .toList();
+
+        // 실내, 실외 판단
+        boolean isIndoorOnly = openWeatherService.isIndoorOnly(latitude, longitude);
+
+        // 반경 10km 내 유적지 조회
+        List<Heritage> nearby = heritageRepository.findNearbyHeritages(latitude, longitude, 10000);
+
+        // 방문했던 유적지 제외
+        List<Heritage> filtered = nearby.stream()
+                .filter(h -> visitedHeritages.stream().noneMatch(v -> v.getId().equals(h.getId())))
+                .toList();
+
+        // 실내 필터링
+        if (isIndoorOnly) {
+            filtered = filtered.stream()
+                    .filter(h -> h.getSide().equalsIgnoreCase("실내"))
+                    .toList();
+        }
+
+        filtered = new ArrayList<>(filtered);
+
+        if (filtered.size() > 100) {
+            Collections.shuffle(filtered);
+            filtered = filtered.subList(0, 100);
+        }
+
+        // chatGPT API를 통한 추천
+        Map<Long, String> recommended = chatGPTService.recommendFromContext(visitedHeritages, bookmarkedHeritages, filtered);
+
+        Map<Long, Heritage> filteredMap = filtered.stream()
+                .collect(Collectors.toMap(Heritage::getId, h -> h));
+
+        List<HeritageRecommendResponse> recommendResponses = recommended.entrySet().stream()
+                .map(entry -> {
+                    Long id = entry.getKey();
+                    String reason = entry.getValue();
+                    Heritage heritage = filteredMap.get(id);
+                    if (heritage == null) return null;
+                    recommendRepository.save(HeritageRecommend.builder()
+                            .member(foundMember)
+                            .heritage(heritage)
+                            .reason(reason)
+                            .build());
+                    return covertToHeritageRecommendResponse(heritage, reason);
+                })
+                .filter(Objects::nonNull)
+                .toList();
+
+        return HeritageRecommendListResponse.builder()
+                .count(recommendResponses.size())
+                .recommendations(recommendResponses)
                 .build();
     }
 
@@ -325,5 +368,43 @@ public class HeritageService {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         return 6371.0 * c * 1000;
+    }
+
+    private HeritageResponse convertToHeritageResponse(Heritage heritage) {
+        String ccbakdcd = heritage.getCategoryCode();
+        String ccbaasno = heritage.getManageNum();
+        String ccbactcd = heritage.getLocationCode();
+
+        // 소수점 제거 로직
+        if (ccbactcd != null && ccbactcd.endsWith(".0")) {
+            ccbactcd = ccbactcd.substring(0, ccbactcd.length() - 2);
+        }
+
+        if (ccbakdcd != null && ccbakdcd.endsWith(".0")) {
+            ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2);
+        }
+
+        List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
+
+        return HeritageResponse.from(heritage, imageUrls);
+    }
+
+    public HeritageRecommendResponse covertToHeritageRecommendResponse(Heritage heritage, String reason) {
+        String ccbakdcd = heritage.getCategoryCode();
+        String ccbaasno = heritage.getManageNum();
+        String ccbactcd = heritage.getLocationCode();
+
+        // 소수점 제거 로직
+        if (ccbactcd != null && ccbactcd.endsWith(".0")) {
+            ccbactcd = ccbactcd.substring(0, ccbactcd.length() - 2);
+        }
+
+        if (ccbakdcd != null && ccbakdcd.endsWith(".0")) {
+            ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2);
+        }
+
+        List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
+
+        return HeritageRecommendResponse.from(heritage, imageUrls, reason);
     }
 }

@@ -1,7 +1,6 @@
-package com.capstone.HisTour.domain.tts.service;
+package com.capstone.HisTour.domain.api.service;
 
 import com.google.cloud.texttospeech.v1.*;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -10,7 +9,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class TTSService {
 

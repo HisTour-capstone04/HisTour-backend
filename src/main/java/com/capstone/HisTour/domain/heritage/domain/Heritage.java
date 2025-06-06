@@ -46,8 +46,17 @@ public class Heritage {
     @Column(name = "ccbactcd")
     private String locationCode;
 
+    @Column(name = "era")
+    private String era;
+
+    @Column(name = "type")
+    private String type;
+
+    @Column(name = "side")
+    private String side;
+
     @Builder
-    public Heritage(String name, String category, String detailAddress, String description, Region region, Point geom, String categoryCode, String manageNum, String locationCode) {
+    public Heritage(String name, String category, String detailAddress, String description, Region region, Point geom, String categoryCode, String manageNum, String locationCode,  String era, String type,  String side) {
         this.name = name;
         this.category = category;
         this.detailAddress = detailAddress;
@@ -57,5 +66,15 @@ public class Heritage {
         this.categoryCode = categoryCode;
         this.manageNum = manageNum;
         this.locationCode = locationCode;
+        this.era = era;
+        this.type = type;
+        this.side = side;
+    }
+
+    @Override
+    public String toString() {
+        return "id: " + this.getId() + ", name: " + this.getName()
+                + ", category: " + this.getCategory()
+                + ", era: " + this.getEra() + ", type: " + this.getType() + ", side: " + this.getSide();
     }
 }

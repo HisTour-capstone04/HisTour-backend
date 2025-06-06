@@ -1,6 +1,7 @@
 package com.capstone.HisTour.domain.heritage.controller;
 
 import com.capstone.HisTour.domain.heritage.dto.HeritageListResponse;
+import com.capstone.HisTour.domain.heritage.dto.HeritageRecommendListResponse;
 import com.capstone.HisTour.domain.heritage.dto.HeritageResponse;
 import com.capstone.HisTour.domain.heritage.service.HeritageService;
 import com.capstone.HisTour.global.DefaultResponse;
@@ -68,7 +69,7 @@ public class HeritageController {
     }
 
     // 근처 유적지 조회 후
-    // (가장 가까운 유적지 이름) + (나머지 유적지 개수) 의 문자열 반환
+    // '(가장 가까운 유적지 이름) + (나머지 유적지 개수)' 알람 메시지 반환
     @GetMapping("/nearby-for-alarm")
     @MeasureExecutionTime
     public ResponseEntity<DefaultResponse<HeritageListResponse>> getHeritageNearbyForAlarm(
@@ -127,6 +128,27 @@ public class HeritageController {
         DefaultResponse<HeritageListResponse> response = DefaultResponse.response(
                 "경로상에 있는 유적지 조회 성공",
                 heritagesInRoute
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(response);
+    }
+
+    // 유적지 추천
+    @GetMapping("/recommend")
+    public ResponseEntity<DefaultResponse<HeritageRecommendListResponse>> recommendHeritages(
+            @RequestHeader(value = "Authorization") String token,
+            @RequestParam Double latitude,
+            @RequestParam Double longitude
+    ) {
+        Long memberId = getMemberIdFromToken(token);
+
+        HeritageRecommendListResponse recommendedHeritages =  heritageService.recommendHeritages(memberId, latitude, longitude);
+
+        DefaultResponse<HeritageRecommendListResponse> response = DefaultResponse.response(
+                "유적지 추천 성공",
+                recommendedHeritages
         );
 
         return ResponseEntity

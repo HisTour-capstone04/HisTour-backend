@@ -1,6 +1,6 @@
-package com.capstone.HisTour.domain.tts.controller;
+package com.capstone.HisTour.domain.api.controller;
 
-import com.capstone.HisTour.domain.tts.service.TTSService;
+import com.capstone.HisTour.domain.api.service.TTSService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-public class TTSController {
+public class APIController {
 
     private final TTSService ttsService;
 
