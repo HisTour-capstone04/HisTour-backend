@@ -31,6 +31,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -197,7 +198,7 @@ public class HeritageService {
                 .orElseThrow(() -> new RuntimeException("Member not found"));
 
         // repository에서 조회
-        List<HeritageRecommend> recommends = recommendRepository.findAllByMember(foundMember);
+        List<HeritageRecommend> recommends = recommendRepository.findAllByMemberAndCreatedAt(foundMember, LocalDate.now());
 
         if (!recommends.isEmpty()) {
             List<HeritageRecommendResponse> recommendResponses = recommends.stream()
