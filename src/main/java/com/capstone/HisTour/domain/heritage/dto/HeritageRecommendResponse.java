@@ -9,7 +9,7 @@ import java.util.List;
 
 @Getter
 @Builder
-public class HeritageResponse {
+public class HeritageRecommendResponse {
     private Long id;
     private String name;
     private String category;
@@ -22,10 +22,10 @@ public class HeritageResponse {
     private String era;
     private String side;
     private String type;
+    private String recommendReason;
 
-    // Heritage -> HeritageResponse 변환
-    public static HeritageResponse from(Heritage heritage, List<String> imageUrls) {
-        return HeritageResponse.builder()
+    public static HeritageRecommendResponse from(Heritage heritage, List<String> imageUrls, String recommendReason) {
+        return HeritageRecommendResponse.builder()
                 .id(heritage.getId())
                 .name(heritage.getName())
                 .category(heritage.getCategory())
@@ -38,6 +38,7 @@ public class HeritageResponse {
                 .era(heritage.getEra())
                 .side(heritage.getSide())
                 .type(heritage.getType())
+                .recommendReason(recommendReason)
                 .build();
     }
 }

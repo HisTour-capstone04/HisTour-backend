@@ -28,13 +28,13 @@ public class MemberService {
 
     // 회원가입 로직
     @Transactional
-    public void signUp(SignupRequest signupRequest) {
+    public MemberResponse signUp(SignupRequest signupRequest) {
 
         // signupRequest validation 확인
         Member member = registerValid(signupRequest);
 
         // member DB에 저장
-        memberRepository.save(member);
+        return MemberResponse.from(memberRepository.save(member));
     }
 
     // 로그인 로직

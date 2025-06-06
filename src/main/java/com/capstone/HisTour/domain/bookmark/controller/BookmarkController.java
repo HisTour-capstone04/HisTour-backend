@@ -1,5 +1,6 @@
 package com.capstone.HisTour.domain.bookmark.controller;
 
+import com.capstone.HisTour.domain.bookmark.dto.BookmarkDeleteRequest;
 import com.capstone.HisTour.domain.bookmark.dto.BookmarkListResponse;
 import com.capstone.HisTour.domain.bookmark.dto.BookmarkRequest;
 import com.capstone.HisTour.domain.bookmark.dto.BookmarkResponse;
@@ -56,6 +57,24 @@ public class BookmarkController {
         DefaultResponse<BookmarkListResponse> response = DefaultResponse.response(
                 "북마크 조회 완료",
                 bookmarkListResponse
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(response);
+    }
+
+    // 북마크 삭제
+    @DeleteMapping
+    public ResponseEntity<DefaultResponse<String>> deleteBookmark(@RequestHeader(value = "Authorization") String token,
+                                                                  @RequestBody BookmarkDeleteRequest deleteRequest) {
+        // memberId 추출
+        Long memberId = getMemberIdFromToken(token);
+
+        bookmarkService.deleteBookmark(memberId, deleteRequest);
+
+        DefaultResponse<String> response = DefaultResponse.response(
+                "북마크 삭제에 성공하였습니다."
         );
 
         return ResponseEntity

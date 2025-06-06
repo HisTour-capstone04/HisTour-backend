@@ -10,12 +10,18 @@ import java.util.List;
 public interface HeritageRepository extends JpaRepository<Heritage, Long> {
 
     @Query(value = """
-    SELECT * FROM heritage
+    SELECT *,
+           ST_Distance(
+                geom::geography,\s
+                ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography
+           ) AS distance
+    FROM heritage
     WHERE ST_DWithin(
         geom::geography, 
         ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
         :radius
     )
+    ORDER BY distance ASC
     """, nativeQuery = true)
     List<Heritage> findNearbyHeritages(@Param("latitude") double latitude,
                                        @Param("longitude") double longitude,

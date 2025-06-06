@@ -7,10 +7,12 @@ import lombok.Getter;
 @Builder
 public class ChatbotResponse {
     private String answer;
+    private String title;
 
-    public static ChatbotResponse from(String answer) {
+    public static ChatbotResponse from(String answer, String title) {
         return ChatbotResponse.builder()
                 .answer(answer)
+                .title(title == null ? "" : title)
                 .build();
     }
 }

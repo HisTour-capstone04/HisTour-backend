@@ -36,6 +36,9 @@ dependencies {
 	runtimeOnly 'org.postgresql:postgresql'
 	implementation 'org.hibernate:hibernate-spatial:6.2.7.Final'
 
+	// redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
 	// spring AOP
 	implementation 'org.springframework.boot:spring-boot-starter-aop'
 
@@ -47,8 +50,14 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
+	// google tts
+	implementation 'com.google.cloud:google-cloud-texttospeech:2.63.0'
+
 	// spring security crypto
 	implementation 'org.springframework.security:spring-security-crypto'
+
+	// json
+	implementation("org.json:json:20240303")
 }
 
 tasks.named('test') {

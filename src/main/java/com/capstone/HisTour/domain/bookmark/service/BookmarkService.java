@@ -1,6 +1,7 @@
 package com.capstone.HisTour.domain.bookmark.service;
 
 import com.capstone.HisTour.domain.bookmark.domain.Bookmark;
+import com.capstone.HisTour.domain.bookmark.dto.BookmarkDeleteRequest;
 import com.capstone.HisTour.domain.bookmark.dto.BookmarkListResponse;
 import com.capstone.HisTour.domain.bookmark.dto.BookmarkRequest;
 import com.capstone.HisTour.domain.bookmark.dto.BookmarkResponse;
@@ -36,6 +37,12 @@ public class BookmarkService {
         Heritage heritage = heritageRepository.findById(bookmarkRequest.getHeritageId())
                 .orElseThrow(() -> new RuntimeException("해당 유적지가 존재하지 않습니다."));
 
+        // 유저의 bookmark 조회
+        boolean isDuplicate = bookmarkRepository.existsByMemberIdAndHeritageId(member.getId(), heritage.getId());
+
+        if (isDuplicate)
+            throw new RuntimeException("이미 북마크로 등록되어있는 유적지입니다.");
+
         Bookmark bookmark = new Bookmark(member, heritage);
         bookmark.setCreatedAt(LocalDateTime.now());
 
@@ -56,6 +63,22 @@ public class BookmarkService {
         List<HeritageResponse> heritageResponses = bookmarks.stream().map(bookmark -> heritageService.getHeritageById(bookmark.getHeritage().getId())).toList();
 
         return BookmarkListResponse.from(heritageResponses);
+
+    }
+
+    // 북마크 삭제
+    public void deleteBookmark(Long memberId, BookmarkDeleteRequest deleteRequest) {
+
+        // 멤버 조회
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("해당 멤버가 존재하지 않습니다."));
+
+        // 북마크 조회
+        Bookmark bookmark = bookmarkRepository.findByMemberIdAndId(member.getId(), deleteRequest.getBookmarkId())
+                .orElseThrow(() -> new RuntimeException("북마크가 존재하지 않습니다."));
+
+        // 북마크 삭제
+        bookmarkRepository.delete(bookmark);
 
     }
 }

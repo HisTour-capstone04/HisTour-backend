@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
@@ -29,11 +30,15 @@ public class ChatHistory {
 
     private LocalDateTime timestamp;
 
+    @Setter
+    private String title;
+
     @Builder
-    public ChatHistory(Member member, String question, String answer, LocalDateTime timestamp) {
+    public ChatHistory(Member member, String question, String answer, LocalDateTime timestamp, String title) {
         this.member = member;
         this.question = question;
         this.answer = answer;
         this.timestamp = timestamp;
+        this.title = title;
     }
 }

@@ -4,7 +4,7 @@ import com.capstone.HisTour.domain.alarm.domain.Alarm;
 import com.capstone.HisTour.domain.alarm.dto.AlarmRequest;
 import com.capstone.HisTour.domain.alarm.dto.AlarmResponse;
 import com.capstone.HisTour.domain.alarm.repository.AlarmRepository;
-import com.capstone.HisTour.domain.heritage.dto.HeritageNearbyResponse;
+import com.capstone.HisTour.domain.heritage.dto.HeritageListResponse;
 import com.capstone.HisTour.domain.heritage.dto.HeritageResponse;
 import com.capstone.HisTour.domain.heritage.service.HeritageService;
 import com.capstone.HisTour.domain.member.domain.Member;
@@ -41,7 +41,7 @@ public class AlarmService {
                 .orElse(null);
 
         // find nearby heritages using lat, long, range
-        HeritageNearbyResponse heritagesNearby = heritageService.getHeritageNearby(
+        HeritageListResponse heritagesNearby = heritageService.getHeritageNearby(memberId,
                 alarmRequest.getLatitude(), alarmRequest.getLongitude(), alarmRequest.getRange());
 
         Map<String, Object> message = new HashMap<>();
