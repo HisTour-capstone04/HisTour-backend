@@ -55,6 +55,9 @@ dependencies {
 
 	// spring security crypto
 	implementation 'org.springframework.security:spring-security-crypto'
+
+	// json
+	implementation("org.json:json:20240303")
 }
 
 tasks.named('test') {
