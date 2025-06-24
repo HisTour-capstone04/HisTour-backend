@@ -18,6 +18,7 @@ import com.capstone.HisTour.domain.visited.domain.Visited;
 import com.capstone.HisTour.domain.visited.repostiory.VisitedRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -41,7 +42,6 @@ import java.util.stream.Collectors;
 public class HeritageService {
 
     private final HeritageRepository heritageRepository;
-    private final RestClient restClient;
     private final RedisTemplate<String, String> redisTemplate;
     private final VisitedRepository visitedRepository;
     private final BookmarkRepository bookmarkRepository;
@@ -49,6 +49,7 @@ public class HeritageService {
     private final OpenWeatherService openWeatherService;
     private final ChatGPTService chatGPTService;
     private final HeritageRecommendRepository recommendRepository;
+    private final ImageApiService imageApiService;
 
     // 특정 유적지 조회
     public HeritageResponse getHeritageById(Long id) {
@@ -72,7 +73,7 @@ public class HeritageService {
             ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2); // ".0" 제거
         }
 
-        List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
+        List<String> imageUrls = imageApiService.getCachedImageUrls(ccbakdcd, ccbaasno, ccbactcd);
 
         // HeritageResponse 반환
         return HeritageResponse.from(heritage, imageUrls);
@@ -289,52 +290,51 @@ public class HeritageService {
                 .build();
     }
 
-    // heritage image url 가져오기
-    private List<String> getImageUrls(String ccbaKdcd, String ccbaAsno, String ccbaCtcd) {
+//    // heritage image url 가져오기
+//    @Cacheable(value = "heritageImageUrls", key = "#ccbaKdcd + '_' + #ccbaAsno + '_' + #ccbaCtcd")
+//    public List<String> getImageUrls(String ccbaKdcd, String ccbaAsno, String ccbaCtcd) {
+//        System.out.println("DEBUG: Calling external image API for " + ccbaKdcd + "/" + ccbaAsno + "/" + ccbaCtcd); // 캐시 히트/미스 확인용
+//        String url = "https://www.khs.go.kr/cha/SearchImageOpenapi.do" +
+//                "?ccbaKdcd=" + ccbaKdcd +
+//                "&ccbaAsno=" + ccbaAsno +
+//                "&ccbaCtcd=" + ccbaCtcd;
+//
+//        String xmlString = restClient.get()
+//                .uri(url)
+//                .accept(MediaType.APPLICATION_XML)
+//                .retrieve()
+//                .body(String.class);
+//
+//        return parseImageUrl(xmlString);
+//    }
 
-        String url = "https://www.khs.go.kr/cha/SearchImageOpenapi.do" +
-                "?ccbaKdcd=" + ccbaKdcd +
-                "&ccbaAsno=" + ccbaAsno +
-                "&ccbaCtcd=" + ccbaCtcd;
-
-        //System.out.println(url);
-
-        String xmlString = restClient.get()
-                .uri(url)
-                .accept(MediaType.APPLICATION_XML)
-                .retrieve()
-                .body(String.class);
-
-        return parseImageUrl(xmlString);
-    }
-
-    // xml 파싱해서 image url 추출
-    private List<String> parseImageUrl(String xmlString) {
-        List<String> imageUrls = new ArrayList<>();
-
-        try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-
-            // 문자열 -> InputStream -> Document
-            ByteArrayInputStream input = new ByteArrayInputStream(xmlString.getBytes(StandardCharsets.UTF_8));
-            Document doc = builder.parse(input);
-
-            // 모든 <imageUrl> 태그 찾기
-            NodeList imageUrlNodes = doc.getElementsByTagName("imageUrl");
-
-            for (int i = 0; i < imageUrlNodes.getLength(); i++) {
-                Node imageUrlNode = imageUrlNodes.item(i);
-                String url = imageUrlNode.getTextContent().trim();
-                imageUrls.add(url);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-
-        return imageUrls;
-    }
+//    // xml 파싱해서 image url 추출
+//    private List<String> parseImageUrl(String xmlString) {
+//        List<String> imageUrls = new ArrayList<>();
+//
+//        try {
+//            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+//            DocumentBuilder builder = factory.newDocumentBuilder();
+//
+//            // 문자열 -> InputStream -> Document
+//            ByteArrayInputStream input = new ByteArrayInputStream(xmlString.getBytes(StandardCharsets.UTF_8));
+//            Document doc = builder.parse(input);
+//
+//            // 모든 <imageUrl> 태그 찾기
+//            NodeList imageUrlNodes = doc.getElementsByTagName("imageUrl");
+//
+//            for (int i = 0; i < imageUrlNodes.getLength(); i++) {
+//                Node imageUrlNode = imageUrlNodes.item(i);
+//                String url = imageUrlNode.getTextContent().trim();
+//                imageUrls.add(url);
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return null;
+//        }
+//
+//        return imageUrls;
+//    }
 
     // 좌표 2개의 mid point 추출
     private double[] getMidpoint(double lat1, double lon1, double lat2, double lon2) {
@@ -393,7 +393,7 @@ public class HeritageService {
             ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2);
         }
 
-        List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
+        List<String> imageUrls = imageApiService.getCachedImageUrls(ccbakdcd, ccbaasno, ccbactcd);
 
         return HeritageResponse.from(heritage, imageUrls);
     }
@@ -412,7 +412,7 @@ public class HeritageService {
             ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2);
         }
 
-        List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
+        List<String> imageUrls = imageApiService.getCachedImageUrls(ccbakdcd, ccbaasno, ccbactcd);
 
         return HeritageRecommendResponse.from(heritage, imageUrls, reason);
     }
