@@ -2,6 +2,7 @@ package com.capstone.HisTour.domain.visited.controller;
 
 import com.capstone.HisTour.domain.visited.dto.VisitedListResponse;
 import com.capstone.HisTour.domain.visited.dto.VisitedRequest;
+import com.capstone.HisTour.domain.visited.dto.VisitedResponse;
 import com.capstone.HisTour.domain.visited.service.VisitedService;
 import com.capstone.HisTour.global.DefaultResponse;
 import com.capstone.HisTour.global.auth.jwt.JwtTokenProvider;
@@ -20,17 +21,18 @@ public class VisitedController {
     private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping
-    public ResponseEntity<DefaultResponse<String>> addVisited(@RequestHeader(value = "Authorization") String token,
-                                                              @RequestBody VisitedRequest visitedRequest) {
+    public ResponseEntity<DefaultResponse<VisitedResponse>> addVisited(@RequestHeader(value = "Authorization") String token,
+                                                                       @RequestBody VisitedRequest visitedRequest) {
         // memberId 추출
         Long memberId = getMemberIdFromToken(token);
 
         // service 위임
-        visitedService.addVisited(memberId, visitedRequest);
+        VisitedResponse visitedResponse = visitedService.addVisited(memberId, visitedRequest);
 
         // DefaultResponseDto 생성
-        DefaultResponse<String> response = DefaultResponse.response(
-                "방문지 등록 완료"
+        DefaultResponse<VisitedResponse> response = DefaultResponse.response(
+                "방문지 등록 완료",
+                visitedResponse
         );
 
         return ResponseEntity

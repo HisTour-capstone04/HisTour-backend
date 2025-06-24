@@ -9,6 +9,7 @@ import com.capstone.HisTour.domain.member.repository.MemberRepository;
 import com.capstone.HisTour.domain.visited.domain.Visited;
 import com.capstone.HisTour.domain.visited.dto.VisitedListResponse;
 import com.capstone.HisTour.domain.visited.dto.VisitedRequest;
+import com.capstone.HisTour.domain.visited.dto.VisitedResponse;
 import com.capstone.HisTour.domain.visited.repostiory.VisitedRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class VisitedService {
     private final HeritageRepository heritageRepository;
     private final HeritageService heritageService;
 
-    public void addVisited(Long memberId, VisitedRequest visitedRequest) {
+    public VisitedResponse addVisited(Long memberId, VisitedRequest visitedRequest) {
 
         // 멤버 유효성 검증
         Member member = memberRepository.findById(memberId)
@@ -37,7 +38,7 @@ public class VisitedService {
         Visited visited = new Visited(member, heritage);
         visited.setVisitedAt(LocalDateTime.now());
 
-        visitedRepository.save(visited);
+        return VisitedResponse.from(visitedRepository.save(visited));
     }
 
     public VisitedListResponse getVisitedList(Long memberId) {

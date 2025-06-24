@@ -75,6 +75,6 @@ public class Heritage {
     public String toString() {
         return "id: " + this.getId() + ", name: " + this.getName()
                 + ", category: " + this.getCategory()
-                + ", era: " + this.getEra() + ", type: " + this.getType() + ", side: " + this.getSide();
+                + ", era: " + this.getEra() + ", side: " + this.getSide();
     }
 }
