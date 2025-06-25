@@ -44,7 +44,9 @@ public class HeritageController {
                 .body(response);
     }
 
+    // 근처 유적지 조회
     @GetMapping("/nearby")
+    @MeasureExecutionTime
     public ResponseEntity<DefaultResponse<HeritageListResponse>> getHeritageNearby(
             @RequestHeader(value = "Authorization") String token,
             @RequestParam Double latitude,
@@ -55,7 +57,7 @@ public class HeritageController {
         Long memberId = getMemberIdFromToken(token);
 
         // 근처 유적지 조회
-        HeritageListResponse heritageResponses = heritageService.getHeritageNearby(memberId, latitude, longitude, radius);
+        HeritageListResponse heritageResponses = heritageService.getHeritageNearby(latitude, longitude, radius);
 
         // ResponseDto 생성
         DefaultResponse<HeritageListResponse> response = DefaultResponse.response(

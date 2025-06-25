@@ -41,7 +41,7 @@ public class AlarmService {
                 .orElse(null);
 
         // find nearby heritages using lat, long, range
-        HeritageListResponse heritagesNearby = heritageService.getHeritageNearby(memberId,
+        HeritageListResponse heritagesNearby = heritageService.getHeritageNearby(
                 alarmRequest.getLatitude(), alarmRequest.getLongitude(), alarmRequest.getRange());
 
         Map<String, Object> message = new HashMap<>();
