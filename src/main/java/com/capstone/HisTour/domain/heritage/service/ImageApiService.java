@@ -1,6 +1,7 @@
 package com.capstone.HisTour.domain.heritage.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -18,13 +19,14 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ImageApiService {
 
     private final RestClient restClient;
 
     @Cacheable(value = "heritageImageUrls", key = "#ccbaKdcd + '_' + #ccbaAsno + '_' + #ccbaCtcd")
     public List<String> getCachedImageUrls(String ccbaKdcd, String ccbaAsno, String ccbaCtcd) {
-        System.out.println("DEBUG: Calling external image API for " + ccbaKdcd + "/" + ccbaAsno + "/" + ccbaCtcd);
+        log.debug("DEBUG: Calling external image API for {} / {}  / {} ", ccbaKdcd, ccbaAsno, ccbaCtcd);
         String url = "https://www.khs.go.kr/cha/SearchImageOpenapi.do" +
                 "?ccbaKdcd=" + ccbaKdcd +
                 "&ccbaAsno=" + ccbaAsno +
