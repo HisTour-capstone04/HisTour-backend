@@ -63,7 +63,6 @@ public class HeritageService {
         String ccbaasno = heritage.getManageNum();
         String ccbactcd = heritage.getLocationCode();
 
-
         // 소수점 제거 로직
         if (ccbactcd != null && ccbactcd.endsWith(".0")) {
             ccbactcd = ccbactcd.substring(0, ccbactcd.length() - 2); // ".0" 제거
@@ -80,11 +79,21 @@ public class HeritageService {
     }
 
     // 근처 유적지 리스트 조회
-    public HeritageListResponse getHeritageNearby(Long memberId, double latitude, double longitude, double radius) {
+    public HeritageListResponse getHeritageNearby(double latitude, double longitude, double radius) {
 
         // 위도, 경도, radius를 사용하여 근처 유적지 조회
+        // GIST index를 사용하여 좌표를 빠르게 검색하도록 수정
+        long querystart = System.currentTimeMillis();
         List<Heritage> heritagesNearby = heritageRepository.findNearbyHeritages(latitude, longitude, radius);
+        long queryend = System.currentTimeMillis();
+        log.info("query execution time: {}", (queryend - querystart));
 
+        long cacheStart = System.currentTimeMillis();
+        heritagesNearby.parallelStream().forEach(this::preloadImageUrls);
+        long cacheEnd = System.currentTimeMillis();
+        log.info("image url preload time: {}", (cacheEnd - cacheStart));
+
+        long extractstart = System.currentTimeMillis();
         // 조회된 것 중 15개 무작위 추출
         heritagesNearby = new ArrayList<>(heritagesNearby);
         if (!heritagesNearby.isEmpty()) {
@@ -92,10 +101,17 @@ public class HeritageService {
             int limit = Math.min(15, heritagesNearby.size());
             heritagesNearby = heritagesNearby.subList(0, limit);
         }
+        long extractend = System.currentTimeMillis();
+        log.info("extract execution time: {}", (extractend - extractstart));
 
+        long toDTOstart = System.currentTimeMillis();
         List<HeritageResponse> heritageResponses = heritagesNearby.stream()
+                .parallel()
                 .map(this::convertToHeritageResponse)
                 .toList();
+
+        long toDTOend = System.currentTimeMillis();
+        log.info("toDTO execution time: {}", (toDTOend-toDTOstart));
 
         // HeritageNearbyResponse 반환
         return HeritageListResponse.builder()
@@ -290,52 +306,6 @@ public class HeritageService {
                 .build();
     }
 
-//    // heritage image url 가져오기
-//    @Cacheable(value = "heritageImageUrls", key = "#ccbaKdcd + '_' + #ccbaAsno + '_' + #ccbaCtcd")
-//    public List<String> getImageUrls(String ccbaKdcd, String ccbaAsno, String ccbaCtcd) {
-//        System.out.println("DEBUG: Calling external image API for " + ccbaKdcd + "/" + ccbaAsno + "/" + ccbaCtcd); // 캐시 히트/미스 확인용
-//        String url = "https://www.khs.go.kr/cha/SearchImageOpenapi.do" +
-//                "?ccbaKdcd=" + ccbaKdcd +
-//                "&ccbaAsno=" + ccbaAsno +
-//                "&ccbaCtcd=" + ccbaCtcd;
-//
-//        String xmlString = restClient.get()
-//                .uri(url)
-//                .accept(MediaType.APPLICATION_XML)
-//                .retrieve()
-//                .body(String.class);
-//
-//        return parseImageUrl(xmlString);
-//    }
-
-//    // xml 파싱해서 image url 추출
-//    private List<String> parseImageUrl(String xmlString) {
-//        List<String> imageUrls = new ArrayList<>();
-//
-//        try {
-//            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-//            DocumentBuilder builder = factory.newDocumentBuilder();
-//
-//            // 문자열 -> InputStream -> Document
-//            ByteArrayInputStream input = new ByteArrayInputStream(xmlString.getBytes(StandardCharsets.UTF_8));
-//            Document doc = builder.parse(input);
-//
-//            // 모든 <imageUrl> 태그 찾기
-//            NodeList imageUrlNodes = doc.getElementsByTagName("imageUrl");
-//
-//            for (int i = 0; i < imageUrlNodes.getLength(); i++) {
-//                Node imageUrlNode = imageUrlNodes.item(i);
-//                String url = imageUrlNode.getTextContent().trim();
-//                imageUrls.add(url);
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return null;
-//        }
-//
-//        return imageUrls;
-//    }
-
     // 좌표 2개의 mid point 추출
     private double[] getMidpoint(double lat1, double lon1, double lat2, double lon2) {
 
@@ -415,5 +385,20 @@ public class HeritageService {
         List<String> imageUrls = imageApiService.getCachedImageUrls(ccbakdcd, ccbaasno, ccbactcd);
 
         return HeritageRecommendResponse.from(heritage, imageUrls, reason);
+    }
+
+    private void preloadImageUrls(Heritage heritage) {
+        String ccbakdcd = heritage.getCategoryCode();
+        String ccbaasno = heritage.getManageNum();
+        String ccbactcd = heritage.getLocationCode();
+
+        if (ccbactcd != null && ccbactcd.endsWith(".0")) {
+            ccbactcd = ccbactcd.substring(0, ccbactcd.length() - 2);
+        }
+        if (ccbakdcd != null && ccbakdcd.endsWith(".0")) {
+            ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2);
+        }
+
+        imageApiService.getCachedImageUrls(ccbakdcd, ccbaasno, ccbactcd); // 내부에서 캐싱만 수행
     }
 }

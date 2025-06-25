@@ -5,10 +5,11 @@ import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.locationtech.jts.geom.Point;
 
 @Entity
-@Table(name = "heritage")
+@Table(name = "heritage", indexes = @Index(name = "idx_heritage_geom", columnList = "geom"))
 @NoArgsConstructor
 @Getter
 public class Heritage {
