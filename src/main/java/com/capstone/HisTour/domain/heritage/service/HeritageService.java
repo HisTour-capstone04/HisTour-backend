@@ -2,6 +2,9 @@ package com.capstone.HisTour.domain.heritage.service;
 
 import com.capstone.HisTour.domain.api.service.ChatGPTService;
 import com.capstone.HisTour.domain.api.service.OpenWeatherService;
+import com.capstone.HisTour.domain.apiPayload.exception.handler.HeritageHandler;
+import com.capstone.HisTour.domain.apiPayload.exception.handler.MemberHandler;
+import com.capstone.HisTour.domain.apiPayload.status.ErrorStatus;
 import com.capstone.HisTour.domain.bookmark.domain.Bookmark;
 import com.capstone.HisTour.domain.bookmark.repository.BookmarkRepository;
 import com.capstone.HisTour.domain.heritage.domain.Heritage;
@@ -56,7 +59,7 @@ public class HeritageService {
 
         // id를 통해서 heritage 조회
         Heritage heritage = heritageRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("해당 id를 가진 Heritage가 존재하지 않습니다."));
+                .orElseThrow(() -> new HeritageHandler(ErrorStatus.HERITAGE_NOT_FOUND));
 
         // ccbakdcd, ccbaasno, ccbactcd를 이용하여 이미지 url 추출하기
         String ccbakdcd = heritage.getCategoryCode();
@@ -220,7 +223,7 @@ public class HeritageService {
 
         // member 조회
         Member foundMember = memberRepository.findById(memberId)
-                .orElseThrow(() -> new RuntimeException("Member not found"));
+                .orElseThrow(() -> new MemberHandler(ErrorStatus.MEMBER_NOT_FOUND));
 
         // repository에서 조회
         List<HeritageRecommend> recommends = recommendRepository.findAllByMemberAndCreatedAt(foundMember, LocalDate.now());
@@ -273,9 +276,9 @@ public class HeritageService {
 
         filtered = new ArrayList<>(filtered);
 
-        if (filtered.size() > 100) {
+        if (filtered.size() > 50) {
             Collections.shuffle(filtered);
-            filtered = filtered.subList(0, 100);
+            filtered = filtered.subList(0, 50);
         }
 
         // chatGPT API를 통한 추천

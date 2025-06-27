@@ -1,5 +1,9 @@
 package com.capstone.HisTour.domain.bookmark.service;
 
+import com.capstone.HisTour.domain.apiPayload.exception.handler.BookmarkHandler;
+import com.capstone.HisTour.domain.apiPayload.exception.handler.HeritageHandler;
+import com.capstone.HisTour.domain.apiPayload.exception.handler.MemberHandler;
+import com.capstone.HisTour.domain.apiPayload.status.ErrorStatus;
 import com.capstone.HisTour.domain.bookmark.domain.Bookmark;
 import com.capstone.HisTour.domain.bookmark.dto.BookmarkDeleteRequest;
 import com.capstone.HisTour.domain.bookmark.dto.BookmarkListResponse;
@@ -32,16 +36,16 @@ public class BookmarkService {
 
         // 멤버 유효성 검증
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new RuntimeException("해당 멤버가 존재하지 않습니다."));
+                .orElseThrow(() -> new MemberHandler(ErrorStatus.MEMBER_NOT_FOUND));
 
         Heritage heritage = heritageRepository.findById(bookmarkRequest.getHeritageId())
-                .orElseThrow(() -> new RuntimeException("해당 유적지가 존재하지 않습니다."));
+                .orElseThrow(() -> new HeritageHandler(ErrorStatus.HERITAGE_NOT_FOUND));
 
         // 유저의 bookmark 조회
         boolean isDuplicate = bookmarkRepository.existsByMemberIdAndHeritageId(member.getId(), heritage.getId());
 
         if (isDuplicate)
-            throw new RuntimeException("이미 북마크로 등록되어있는 유적지입니다.");
+            throw new BookmarkHandler(ErrorStatus.BOOKMARK_DUPLICATE);
 
         Bookmark bookmark = new Bookmark(member, heritage);
         bookmark.setCreatedAt(LocalDateTime.now());
@@ -54,13 +58,15 @@ public class BookmarkService {
 
         // 멤버 유효성 검증
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new RuntimeException("해당 멤버가 존재하지 않습니다."));
+                .orElseThrow(() -> new MemberHandler(ErrorStatus.MEMBER_NOT_FOUND));
 
         // 북마크 member id로 조회
         List<Bookmark> bookmarks = bookmarkRepository.findAllByMemberId(memberId);
 
-        // bookmark를 토대로 heritage 조회
-        List<HeritageResponse> heritageResponses = bookmarks.stream().map(bookmark -> heritageService.getHeritageById(bookmark.getHeritage().getId())).toList();
+        // bookmark를 토대로 heritage 조회 및 DTO 변환
+        List<HeritageResponse> heritageResponses = bookmarks.stream()
+                .map(bookmark -> heritageService.getHeritageById(bookmark.getHeritage().getId()))
+                .toList();
 
         return BookmarkListResponse.from(heritageResponses);
 
@@ -71,14 +77,13 @@ public class BookmarkService {
 
         // 멤버 조회
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new RuntimeException("해당 멤버가 존재하지 않습니다."));
+                .orElseThrow(() -> new MemberHandler(ErrorStatus.MEMBER_NOT_FOUND));
 
         // 북마크 조회
         Bookmark bookmark = bookmarkRepository.findByMemberIdAndId(member.getId(), deleteRequest.getBookmarkId())
-                .orElseThrow(() -> new RuntimeException("북마크가 존재하지 않습니다."));
+                .orElseThrow(() -> new BookmarkHandler(ErrorStatus.BOOKMARK_NOT_FOUND));
 
         // 북마크 삭제
         bookmarkRepository.delete(bookmark);
-
     }
 }

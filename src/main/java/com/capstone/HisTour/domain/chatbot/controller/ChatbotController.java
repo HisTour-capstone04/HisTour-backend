@@ -3,7 +3,7 @@ package com.capstone.HisTour.domain.chatbot.controller;
 import com.capstone.HisTour.domain.chatbot.dto.ChatRequest;
 import com.capstone.HisTour.domain.chatbot.dto.ChatbotResponse;
 import com.capstone.HisTour.domain.chatbot.service.ChatbotService;
-import com.capstone.HisTour.global.DefaultResponse;
+import com.capstone.HisTour.domain.apiPayload.DefaultResponse;
 import com.capstone.HisTour.global.auth.jwt.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;

@@ -3,7 +3,7 @@ package com.capstone.HisTour.domain.alarm.controller;
 import com.capstone.HisTour.domain.alarm.dto.AlarmRequest;
 import com.capstone.HisTour.domain.alarm.dto.AlarmResponse;
 import com.capstone.HisTour.domain.alarm.service.AlarmService;
-import com.capstone.HisTour.global.DefaultResponse;
+import com.capstone.HisTour.domain.apiPayload.DefaultResponse;
 import com.capstone.HisTour.global.auth.jwt.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;

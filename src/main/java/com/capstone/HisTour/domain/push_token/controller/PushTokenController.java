@@ -2,7 +2,7 @@ package com.capstone.HisTour.domain.push_token.controller;
 
 import com.capstone.HisTour.domain.push_token.dto.PushTokenRequest;
 import com.capstone.HisTour.domain.push_token.service.PushTokenService;
-import com.capstone.HisTour.global.DefaultResponse;
+import com.capstone.HisTour.domain.apiPayload.DefaultResponse;
 import com.capstone.HisTour.global.auth.jwt.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
