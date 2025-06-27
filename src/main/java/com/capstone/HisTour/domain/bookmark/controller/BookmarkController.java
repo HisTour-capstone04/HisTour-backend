@@ -5,7 +5,7 @@ import com.capstone.HisTour.domain.bookmark.dto.BookmarkListResponse;
 import com.capstone.HisTour.domain.bookmark.dto.BookmarkRequest;
 import com.capstone.HisTour.domain.bookmark.dto.BookmarkResponse;
 import com.capstone.HisTour.domain.bookmark.service.BookmarkService;
-import com.capstone.HisTour.global.DefaultResponse;
+import com.capstone.HisTour.domain.apiPayload.DefaultResponse;
 import com.capstone.HisTour.global.auth.jwt.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class BookmarkController {
 
     // 북마크 추가
     @PostMapping
-    public ResponseEntity<DefaultResponse<BookmarkResponse>> addBookmark(@RequestHeader(value = "Authorization") String token,
+    public DefaultResponse<BookmarkResponse> addBookmark(@RequestHeader(value = "Authorization") String token,
                                                                          @RequestBody BookmarkRequest request) {
 
         // access token에서 member id 추출
@@ -32,20 +32,12 @@ public class BookmarkController {
         // 북마크 추가 로직
         BookmarkResponse bookmarkResponse = bookmarkService.addBookmark(memberId, request);
 
-        // DefaultResponseDto 생성
-        DefaultResponse<BookmarkResponse> response = DefaultResponse.response(
-                "북마크 등록 완료.",
-                bookmarkResponse
-        );
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
+        return DefaultResponse.onSuccess(bookmarkResponse);
     }
 
     // 북마크 리스트 조회
     @GetMapping
-    public ResponseEntity<DefaultResponse<BookmarkListResponse>> getAllBookmarks(@RequestHeader(value = "Authorization") String token) {
+    public DefaultResponse<BookmarkListResponse> getAllBookmarks(@RequestHeader(value = "Authorization") String token) {
 
         // access token에서 member id 추출
         Long memberId = getMemberIdFromToken(token);
@@ -53,33 +45,19 @@ public class BookmarkController {
         // 북마크 조회 로직
         BookmarkListResponse bookmarkListResponse = bookmarkService.getBookmarkList(memberId);
 
-        // DefaultResponseDto 생성
-        DefaultResponse<BookmarkListResponse> response = DefaultResponse.response(
-                "북마크 조회 완료",
-                bookmarkListResponse
-        );
-
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(response);
+        return DefaultResponse.onSuccess(bookmarkListResponse);
     }
 
     // 북마크 삭제
     @DeleteMapping
-    public ResponseEntity<DefaultResponse<String>> deleteBookmark(@RequestHeader(value = "Authorization") String token,
+    public DefaultResponse<String> deleteBookmark(@RequestHeader(value = "Authorization") String token,
                                                                   @RequestBody BookmarkDeleteRequest deleteRequest) {
         // memberId 추출
         Long memberId = getMemberIdFromToken(token);
 
         bookmarkService.deleteBookmark(memberId, deleteRequest);
 
-        DefaultResponse<String> response = DefaultResponse.response(
-                "북마크 삭제에 성공하였습니다."
-        );
-
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(response);
+        return DefaultResponse.onSuccess("삭제되었습니다.");
     }
 
     private Long getMemberIdFromToken(String token) {
