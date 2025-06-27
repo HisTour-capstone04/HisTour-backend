@@ -32,6 +32,8 @@ public class ImageApiService {
                 "&ccbaAsno=" + ccbaAsno +
                 "&ccbaCtcd=" + ccbaCtcd;
 
+        log.info("DEBUG: Calling external image API for {}", url);
+
         String xmlString = restClient.get()
                 .uri(url)
                 .accept(MediaType.APPLICATION_XML)

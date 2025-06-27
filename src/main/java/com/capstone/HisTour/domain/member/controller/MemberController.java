@@ -5,7 +5,7 @@ import com.capstone.HisTour.domain.member.dto.LoginResponse;
 import com.capstone.HisTour.domain.member.dto.MemberResponse;
 import com.capstone.HisTour.domain.member.dto.SignupRequest;
 import com.capstone.HisTour.domain.member.service.MemberService;
-import com.capstone.HisTour.global.DefaultResponse;
+import com.capstone.HisTour.domain.apiPayload.DefaultResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

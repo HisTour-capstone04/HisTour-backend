@@ -3,7 +3,7 @@ package com.capstone.HisTour.domain.visited.controller;
 import com.capstone.HisTour.domain.visited.dto.VisitedListResponse;
 import com.capstone.HisTour.domain.visited.dto.VisitedRequest;
 import com.capstone.HisTour.domain.visited.service.VisitedService;
-import com.capstone.HisTour.global.DefaultResponse;
+import com.capstone.HisTour.domain.apiPayload.DefaultResponse;
 import com.capstone.HisTour.global.auth.jwt.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
