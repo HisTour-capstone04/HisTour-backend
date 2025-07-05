@@ -1,6 +1,5 @@
 package com.capstone.HisTour.member;
 
-import com.capstone.HisTour.domain.apiPayload.exception.GeneralException;
 import com.capstone.HisTour.domain.apiPayload.exception.handler.MemberHandler;
 import com.capstone.HisTour.domain.apiPayload.status.ErrorStatus;
 import com.capstone.HisTour.domain.member.domain.LoginType;
@@ -21,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -134,6 +132,50 @@ public class MemberServiceTest {
         verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
         verify(jwtTokenProvider, times(1)).createAccessToken(member, refreshToken.getId());
         verify(memberRepository, times(1)).findByEmail(loginRequest.getEmail());
+    }
 
+    @Test
+    @DisplayName("refreshToken 없는 상태에서 로그인 성공")
+    void loginSuccessNotExistsRefreshToken() {
+
+        // given
+        LoginRequest loginRequest = new LoginRequest("test@nate.com", "test");
+
+        Member member = Member.builder()
+                .email("test@nate.com")
+                .password("test")
+                .username("nickname")
+                .loginType(LoginType.REGULAR)
+                .status(MemberStatus.ACTIVE)
+                .build();
+        ReflectionTestUtils.setField(member, "id", 1L);
+
+        RefreshToken refreshToken = RefreshToken.builder()
+                .token("test-token")
+                .member(member)
+                .build();
+        ReflectionTestUtils.setField(refreshToken, "id", 1L);
+
+        when(jwtTokenProvider.createRefreshToken(member)).thenReturn("test-token");
+        when(memberRepository.findByEmail(loginRequest.getEmail())).thenReturn(Optional.of(member));
+        when(refreshTokenRepository.findByMemberId(member.getId())).thenReturn(Optional.empty());
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(refreshToken);
+        when(jwtTokenProvider.createAccessToken(member, refreshToken.getId())).thenReturn("test-token");
+
+        // when
+        LoginResponse loginResponse = memberService.login(loginRequest);
+
+        // then
+        Assertions.assertThat(loginResponse).isNotNull();
+        Assertions.assertThat(loginResponse.getId()).isEqualTo(1L);
+        Assertions.assertThat(loginResponse.getEmail()).isEqualTo("test@nate.com");
+        Assertions.assertThat(loginResponse.getUsername()).isEqualTo("nickname");
+        Assertions.assertThat(loginResponse.getAccessToken()).isEqualTo("test-token");
+
+        verify(refreshTokenRepository, times(1)).findByMemberId(member.getId());
+        verify(refreshTokenRepository, times(1)).save(any(RefreshToken.class));
+        verify(jwtTokenProvider, times(1)).createRefreshToken(member);
+        verify(jwtTokenProvider, times(1)).createAccessToken(member, refreshToken.getId());
+        verify(memberRepository, times(1)).findByEmail(loginRequest.getEmail());
     }
 }
