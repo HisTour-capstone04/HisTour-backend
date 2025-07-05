@@ -21,6 +21,8 @@ public enum ErrorStatus implements BaseErrorCode {
     // Member Error
     MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "MEMBER4001", "사용자가 없습니다."),
     NICKNAME_NOT_EXIST(HttpStatus.BAD_REQUEST, "MEMBER4002", "닉네임은 필수 입니다."),
+    EMAIL_DUPLICATE(HttpStatus.BAD_REQUEST, "MEMBER4003", "중복된 이메일이 존재합니다."),
+    LOGIN_NOT_VALID(HttpStatus.BAD_REQUEST, "MEMBER4004", "유효하지 않은 이메일 혹은 비밀번호입니다."),
 
     // Heritage Error
     HERITAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "HERITAGE4001", "유적지가 없습니다."),
