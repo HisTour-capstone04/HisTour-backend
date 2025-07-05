@@ -1,5 +1,8 @@
 package com.capstone.HisTour.member;
 
+import com.capstone.HisTour.domain.apiPayload.exception.GeneralException;
+import com.capstone.HisTour.domain.apiPayload.exception.handler.MemberHandler;
+import com.capstone.HisTour.domain.apiPayload.status.ErrorStatus;
 import com.capstone.HisTour.domain.member.domain.LoginType;
 import com.capstone.HisTour.domain.member.domain.Member;
 import com.capstone.HisTour.domain.member.domain.MemberStatus;
@@ -13,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -57,5 +61,23 @@ public class MemberServiceTest {
 
         verify(memberRepository, times(1)).existsByEmail(signupRequest.getEmail());
         verify(memberRepository, times(1)).save(any(Member.class));
+    }
+
+    @Test
+    @DisplayName("회원가입 시 이메일 중복 예외 발생")
+    void duplicateEmail() {
+
+        // given
+        when(memberRepository.existsByEmail(anyString())).thenReturn(true);
+
+        SignupRequest signupRequest = new SignupRequest("test@nate.com", "test", "nickname");
+
+        // when & then
+        Assertions.assertThatThrownBy(() ->
+                memberService.signUp(signupRequest)).isInstanceOf(MemberHandler.class)
+                .hasFieldOrPropertyWithValue("code", ErrorStatus.EMAIL_DUPLICATE);
+
+        verify(memberRepository, times(1)).existsByEmail(signupRequest.getEmail());
+        verify(memberRepository, never()).save(any(Member.class));
     }
 }
