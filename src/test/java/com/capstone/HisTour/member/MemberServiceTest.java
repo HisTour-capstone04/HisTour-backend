@@ -178,4 +178,20 @@ public class MemberServiceTest {
         verify(jwtTokenProvider, times(1)).createAccessToken(member, refreshToken.getId());
         verify(memberRepository, times(1)).findByEmail(loginRequest.getEmail());
     }
+
+    @Test
+    @DisplayName("유효하지 않은 이메일 로그인 실패")
+    void notValidEmailLoginFail() {
+
+        // given
+        LoginRequest loginRequest = new LoginRequest("test@nate.com", "test");
+
+        when(memberRepository.findByEmail(loginRequest.getEmail())).thenReturn(Optional.empty());
+
+        // when & then
+        Assertions.assertThatThrownBy(() ->
+            memberService.login(loginRequest)).isInstanceOf(MemberHandler.class)
+                .hasFieldOrPropertyWithValue("code", ErrorStatus.LOGIN_NOT_VALID);
+
+    }
 }
