@@ -86,7 +86,7 @@ public class MemberServiceTest {
 
         // when & then
         Assertions.assertThatThrownBy(() ->
-                memberService.signUp(signupRequest)).isInstanceOf(MemberHandler.class)
+                        memberService.signUp(signupRequest)).isInstanceOf(MemberHandler.class)
                 .hasFieldOrPropertyWithValue("code", ErrorStatus.EMAIL_DUPLICATE);
 
         verify(memberRepository, times(1)).existsByEmail(signupRequest.getEmail());
@@ -110,9 +110,9 @@ public class MemberServiceTest {
         ReflectionTestUtils.setField(member, "id", 1L);
 
         RefreshToken refreshToken = RefreshToken.builder()
-                        .token("test-token")
-                                .member(member)
-                                        .build();
+                .token("test-token")
+                .member(member)
+                .build();
 
         when(memberRepository.findByEmail(loginRequest.getEmail())).thenReturn(Optional.of(member));
         when(refreshTokenRepository.findByMemberId(member.getId())).thenReturn(Optional.of(refreshToken));
@@ -190,8 +190,32 @@ public class MemberServiceTest {
 
         // when & then
         Assertions.assertThatThrownBy(() ->
-            memberService.login(loginRequest)).isInstanceOf(MemberHandler.class)
+                        memberService.login(loginRequest)).isInstanceOf(MemberHandler.class)
                 .hasFieldOrPropertyWithValue("code", ErrorStatus.LOGIN_NOT_VALID);
 
+    }
+
+    @Test
+    @DisplayName("유효하지 않은 비밀번호 로그인 실패")
+    void notValidPasswordLoginFail() {
+
+        // given
+        LoginRequest loginRequest = new LoginRequest("test@nate.com", "test");
+
+        Member member = Member.builder()
+                .email("test@nate.com")
+                .password("test-fail")
+                .username("nickname")
+                .loginType(LoginType.REGULAR)
+                .status(MemberStatus.ACTIVE)
+                .build();
+        ReflectionTestUtils.setField(member, "id", 1L);
+
+        when(memberRepository.findByEmail(loginRequest.getEmail())).thenReturn(Optional.of(member));
+
+        // when & then
+        Assertions.assertThatThrownBy(() ->
+                memberService.login(loginRequest)).isInstanceOf(MemberHandler.class)
+                .hasFieldOrPropertyWithValue("code", ErrorStatus.LOGIN_NOT_VALID);
     }
 }
