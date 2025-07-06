@@ -14,6 +14,7 @@ import com.capstone.HisTour.domain.member.service.MemberService;
 import com.capstone.HisTour.domain.refresh_token.domain.RefreshToken;
 import com.capstone.HisTour.domain.refresh_token.repository.RefreshTokenRepository;
 import com.capstone.HisTour.global.auth.jwt.JwtTokenProvider;
+import io.jsonwebtoken.Claims;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -217,5 +218,46 @@ public class MemberServiceTest {
         Assertions.assertThatThrownBy(() ->
                 memberService.login(loginRequest)).isInstanceOf(MemberHandler.class)
                 .hasFieldOrPropertyWithValue("code", ErrorStatus.LOGIN_NOT_VALID);
+    }
+
+    @Test
+    @DisplayName("회원정보 조회 성공")
+    void userInquirySuccess() {
+
+        // given
+        String authHeader = "Bearer test-auth-header";
+        String token = authHeader.substring(7);
+
+        Claims mockClaims = mock(Claims.class);
+
+        Long expectedMemberId = 1L;
+
+        when(mockClaims.get("memberId", Long.class)).thenReturn(expectedMemberId);
+
+        when(jwtTokenProvider.parseJwtToken(token)).thenReturn(mockClaims);
+
+        Member member = Member.builder()
+                .email("test@nate.com")
+                .password("test")
+                .username("nickname")
+                .loginType(LoginType.REGULAR)
+                .status(MemberStatus.ACTIVE)
+                .build();
+        ReflectionTestUtils.setField(member, "id", expectedMemberId);
+
+        when(memberRepository.findById(expectedMemberId)).thenReturn(Optional.of(member));
+
+
+        // when
+        MemberResponse memberResponse = memberService.getMemberInfo(authHeader);
+
+        // then
+        Assertions.assertThat(memberResponse).isNotNull();
+        Assertions.assertThat(memberResponse.getId()).isEqualTo(expectedMemberId);
+        Assertions.assertThat(memberResponse.getEmail()).isEqualTo("test@nate.com");
+        Assertions.assertThat(memberResponse.getUsername()).isEqualTo("nickname");
+
+        verify(memberRepository, times(1)).findById(expectedMemberId);
+
     }
 }
