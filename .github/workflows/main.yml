@@ -27,6 +27,9 @@ jobs:
         touch ./application.yml
         echo "${{ secrets.APPLICATION }}" > ./application.yml
 
+    - name: Run chmod to make gradlew executable
+      run: chmod +x ./gradlew
+
     - name: Build with Gradle Wrapper
       run: ./gradlew build
 
