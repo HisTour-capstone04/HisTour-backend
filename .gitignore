@@ -24,6 +24,7 @@ bin/
 *.pem
 *.properties
 *.yml
+!gradle/wrapper/gradle-wrapper.properties
 .idea
 *.iws
 *.iml
