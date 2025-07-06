@@ -36,7 +36,7 @@ dependencies {
 
 	runtimeOnly 'org.postgresql:postgresql'
 	implementation 'org.hibernate:hibernate-spatial:6.2.7.Final'
-	runtimeOnly 'com.h2database:h2'
+	testImplementation 'com.h2database:h2'
 
 	// redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
