@@ -19,16 +19,6 @@ jobs:
     - name: Print current directory after checkout
       run: pwd
 
-    # --- 추가된 디버그 스텝: 파일 존재 여부 확인 ---
-    - name: List files in project directory
-      run: |
-        echo "Listing contents of current directory:"
-        ls -la
-        echo "Listing contents of gradle/wrapper directory:"
-        ls -la gradle/wrapper/
-        echo "Listing all files recursively:"
-        ls -laR # 모든 파일을 재귀적으로 나열합니다.
-
     - name: Set up JDK 17
       uses: actions/setup-java@v3
       with:
