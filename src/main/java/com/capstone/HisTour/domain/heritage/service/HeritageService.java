@@ -2,6 +2,9 @@ package com.capstone.HisTour.domain.heritage.service;
 
 import com.capstone.HisTour.domain.api.service.ChatGPTService;
 import com.capstone.HisTour.domain.api.service.OpenWeatherService;
+import com.capstone.HisTour.domain.apiPayload.exception.handler.HeritageHandler;
+import com.capstone.HisTour.domain.apiPayload.exception.handler.MemberHandler;
+import com.capstone.HisTour.domain.apiPayload.status.ErrorStatus;
 import com.capstone.HisTour.domain.bookmark.domain.Bookmark;
 import com.capstone.HisTour.domain.bookmark.repository.BookmarkRepository;
 import com.capstone.HisTour.domain.heritage.domain.Heritage;
@@ -18,6 +21,7 @@ import com.capstone.HisTour.domain.visited.domain.Visited;
 import com.capstone.HisTour.domain.visited.repostiory.VisitedRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -41,7 +45,6 @@ import java.util.stream.Collectors;
 public class HeritageService {
 
     private final HeritageRepository heritageRepository;
-    private final RestClient restClient;
     private final RedisTemplate<String, String> redisTemplate;
     private final VisitedRepository visitedRepository;
     private final BookmarkRepository bookmarkRepository;
@@ -49,19 +52,19 @@ public class HeritageService {
     private final OpenWeatherService openWeatherService;
     private final ChatGPTService chatGPTService;
     private final HeritageRecommendRepository recommendRepository;
+    private final ImageApiService imageApiService;
 
     // 특정 유적지 조회
     public HeritageResponse getHeritageById(Long id) {
 
         // id를 통해서 heritage 조회
         Heritage heritage = heritageRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("해당 id를 가진 Heritage가 존재하지 않습니다."));
+                .orElseThrow(() -> new HeritageHandler(ErrorStatus.HERITAGE_NOT_FOUND));
 
         // ccbakdcd, ccbaasno, ccbactcd를 이용하여 이미지 url 추출하기
         String ccbakdcd = heritage.getCategoryCode();
         String ccbaasno = heritage.getManageNum();
         String ccbactcd = heritage.getLocationCode();
-
 
         // 소수점 제거 로직
         if (ccbactcd != null && ccbactcd.endsWith(".0")) {
@@ -72,18 +75,28 @@ public class HeritageService {
             ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2); // ".0" 제거
         }
 
-        List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
+        List<String> imageUrls = imageApiService.getCachedImageUrls(ccbakdcd, ccbaasno, ccbactcd);
 
         // HeritageResponse 반환
         return HeritageResponse.from(heritage, imageUrls);
     }
 
     // 근처 유적지 리스트 조회
-    public HeritageListResponse getHeritageNearby(Long memberId, double latitude, double longitude, double radius) {
+    public HeritageListResponse getHeritageNearby(double latitude, double longitude, double radius) {
 
         // 위도, 경도, radius를 사용하여 근처 유적지 조회
+        // GIST index를 사용하여 좌표를 빠르게 검색하도록 수정
+        long querystart = System.currentTimeMillis();
         List<Heritage> heritagesNearby = heritageRepository.findNearbyHeritages(latitude, longitude, radius);
+        long queryend = System.currentTimeMillis();
+        log.info("query execution time: {}", (queryend - querystart));
 
+        long cacheStart = System.currentTimeMillis();
+        heritagesNearby.parallelStream().forEach(this::preloadImageUrls);
+        long cacheEnd = System.currentTimeMillis();
+        log.info("image url preload time: {}", (cacheEnd - cacheStart));
+
+        long extractstart = System.currentTimeMillis();
         // 조회된 것 중 15개 무작위 추출
         heritagesNearby = new ArrayList<>(heritagesNearby);
         if (!heritagesNearby.isEmpty()) {
@@ -91,10 +104,17 @@ public class HeritageService {
             int limit = Math.min(15, heritagesNearby.size());
             heritagesNearby = heritagesNearby.subList(0, limit);
         }
+        long extractend = System.currentTimeMillis();
+        log.info("extract execution time: {}", (extractend - extractstart));
 
+        long toDTOstart = System.currentTimeMillis();
         List<HeritageResponse> heritageResponses = heritagesNearby.stream()
+                .parallel()
                 .map(this::convertToHeritageResponse)
                 .toList();
+
+        long toDTOend = System.currentTimeMillis();
+        log.info("toDTO execution time: {}", (toDTOend-toDTOstart));
 
         // HeritageNearbyResponse 반환
         return HeritageListResponse.builder()
@@ -203,7 +223,7 @@ public class HeritageService {
 
         // member 조회
         Member foundMember = memberRepository.findById(memberId)
-                .orElseThrow(() -> new RuntimeException("Member not found"));
+                .orElseThrow(() -> new MemberHandler(ErrorStatus.MEMBER_NOT_FOUND));
 
         // repository에서 조회
         List<HeritageRecommend> recommends = recommendRepository.findAllByMemberAndCreatedAt(foundMember, LocalDate.now());
@@ -256,9 +276,9 @@ public class HeritageService {
 
         filtered = new ArrayList<>(filtered);
 
-        if (filtered.size() > 100) {
+        if (filtered.size() > 50) {
             Collections.shuffle(filtered);
-            filtered = filtered.subList(0, 100);
+            filtered = filtered.subList(0, 50);
         }
 
         // chatGPT API를 통한 추천
@@ -287,53 +307,6 @@ public class HeritageService {
                 .count(recommendResponses.size())
                 .recommendations(recommendResponses)
                 .build();
-    }
-
-    // heritage image url 가져오기
-    private List<String> getImageUrls(String ccbaKdcd, String ccbaAsno, String ccbaCtcd) {
-
-        String url = "https://www.khs.go.kr/cha/SearchImageOpenapi.do" +
-                "?ccbaKdcd=" + ccbaKdcd +
-                "&ccbaAsno=" + ccbaAsno +
-                "&ccbaCtcd=" + ccbaCtcd;
-
-        //System.out.println(url);
-
-        String xmlString = restClient.get()
-                .uri(url)
-                .accept(MediaType.APPLICATION_XML)
-                .retrieve()
-                .body(String.class);
-
-        return parseImageUrl(xmlString);
-    }
-
-    // xml 파싱해서 image url 추출
-    private List<String> parseImageUrl(String xmlString) {
-        List<String> imageUrls = new ArrayList<>();
-
-        try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-
-            // 문자열 -> InputStream -> Document
-            ByteArrayInputStream input = new ByteArrayInputStream(xmlString.getBytes(StandardCharsets.UTF_8));
-            Document doc = builder.parse(input);
-
-            // 모든 <imageUrl> 태그 찾기
-            NodeList imageUrlNodes = doc.getElementsByTagName("imageUrl");
-
-            for (int i = 0; i < imageUrlNodes.getLength(); i++) {
-                Node imageUrlNode = imageUrlNodes.item(i);
-                String url = imageUrlNode.getTextContent().trim();
-                imageUrls.add(url);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-
-        return imageUrls;
     }
 
     // 좌표 2개의 mid point 추출
@@ -393,7 +366,7 @@ public class HeritageService {
             ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2);
         }
 
-        List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
+        List<String> imageUrls = imageApiService.getCachedImageUrls(ccbakdcd, ccbaasno, ccbactcd);
 
         return HeritageResponse.from(heritage, imageUrls);
     }
@@ -412,8 +385,23 @@ public class HeritageService {
             ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2);
         }
 
-        List<String> imageUrls = getImageUrls(ccbakdcd, ccbaasno, ccbactcd);
+        List<String> imageUrls = imageApiService.getCachedImageUrls(ccbakdcd, ccbaasno, ccbactcd);
 
         return HeritageRecommendResponse.from(heritage, imageUrls, reason);
+    }
+
+    private void preloadImageUrls(Heritage heritage) {
+        String ccbakdcd = heritage.getCategoryCode();
+        String ccbaasno = heritage.getManageNum();
+        String ccbactcd = heritage.getLocationCode();
+
+        if (ccbactcd != null && ccbactcd.endsWith(".0")) {
+            ccbactcd = ccbactcd.substring(0, ccbactcd.length() - 2);
+        }
+        if (ccbakdcd != null && ccbakdcd.endsWith(".0")) {
+            ccbakdcd = ccbakdcd.substring(0, ccbakdcd.length() - 2);
+        }
+
+        imageApiService.getCachedImageUrls(ccbakdcd, ccbaasno, ccbactcd); // 내부에서 캐싱만 수행
     }
 }
