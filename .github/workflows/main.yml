@@ -31,6 +31,7 @@ jobs:
         cd ./src/main/resources
         touch ./application.yml
         echo "${{ secrets.APPLICATION_YML }}" > ./application.yml
+        cat ./application.yml
 
     - name: Run chmod to make gradlew executable
       run: chmod +x ./gradlew
