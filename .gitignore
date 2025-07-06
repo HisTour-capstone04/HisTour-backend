@@ -25,6 +25,7 @@ bin/
 *.properties
 *.yml
 !gradle/wrapper/gradle-wrapper.properties
+!application-test.yml
 .idea
 *.iws
 *.iml
